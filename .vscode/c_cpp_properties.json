@@ -12,6 +12,17 @@
             "compilerArgs": [
                 ""
             ]
+        },
+        {
+            "name": "C:\\Users\\DELL\\.platformio\\packages\\framework-arduinoespressif32\\libraries",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ]
         }
     ],
     "version": 4

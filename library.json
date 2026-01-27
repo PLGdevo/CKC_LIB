@@ -1,6 +1,6 @@
 {
   "name": "CKC",
-  "version": "1.2",
+  "version": "1.2.1",
   "description": "It supports WiFi, Ethernet, Zigbee, Modbus, Serial. Works with boards like Arduino, ESP8266, ESP32, STM32, Raspberry Pi...",
   "keywords": "esp8266, esp32, sensors, control, device, smartphone, mobile, app, web, cloud, communication, protocol, iot, wifi, ethernet, serial",
   "authors":
