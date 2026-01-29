@@ -12,10 +12,10 @@
 
     #else
 
-        #define PLG_LOG_ERROR(tag, format, ...)
-        #define PLG_LOG_INFO(tag, format, ...)
-        #define PLG_LOG_DEBUG(tag, format, ...)
-        #define PLG_LOG_WARN(tag, format, ...)
+        #define CKC_LOG_ERROR(tag, format, ...)
+        #define CKC_LOG_INFO(tag, format, ...)
+        #define CKC_LOG_DEBUG(tag, format, ...)
+        #define CKC_LOG_WARN(tag, format, ...)
     #endif    
 
 #endif
