@@ -1,21 +1,35 @@
 #include <Arduino.h>
 
-#define CKC_DEBUG
+// #define CKC_DEBUG
+#define BUTTON_MODE
+const char *SSID = "Phuoc Le 2.4G";
+const char *PASS = "0909028573";
 #include <CKC.h>
 
-CKC CKC_IoT;
+
 void setup()
 {
   Serial.begin(115200);
-  CKC_IoT.begin("PLG", "admin123");
-  delay(20000);
+  pinMode(26, OUTPUT);
+  CKC.init(SSID, PASS);
 }
 void loop()
 {
+  CKC.run();
+  if (CKC.CkC_Connected())
+  {
+    digitalWrite(26, 1);
+  }
+  else
+  {
+    digitalWrite(26, 0);
+  }
+  mqttClient.subscribe("PLG");
   static unsigned long sendTimer = 0;
   if (millis() - sendTimer > 3000)
   {
     sendTimer = millis();
-    CKC_IoT.sendDATA("1", "2", "3", "4", "5");
+    MQTT.sendData("NHIET_DO", "PLG");
+    MQTT.sendData("DO_AM", "UPDATE");
   }
 }
