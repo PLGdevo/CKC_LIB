@@ -1,6 +1,11 @@
+<<<<<<< HEAD
 
 #if defined(ARDUINO) && defined(ESP32)||defined(ESP8266)
     #if defined(CKC_DEBUG)
+=======
+#if defined(CKC_DEBUG)
+    #if defined(ARDUINO) && defined(ESP32)||defined(ESP8266)
+>>>>>>> 51e16ddc631f3760002cbcc7aa6247e66d06a3f3
         #define LOG_BASE(level, tag, format, ...)                 \
             Serial.printf("[%s][%s:%d] %s()[%s]: " format "\n",   \
                         level, CKCFileName(__FILE__), __LINE__, \

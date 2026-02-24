@@ -638,16 +638,30 @@ private:
   #define CKC_UNUSED __attribute__((__unused__))
 #endif
 
+<<<<<<< HEAD
 #define CKC_WRITE(Pin)      void CKC_WidgetWrite##Pin(uint8_t CKC_UNUSED &pin, const CKCParam CKC_UNUSED &param)
 
 void CKC_WidgetWrite(uint8_t CKC_UNUSED &pin, const CKCParam CKC_UNUSED &param)
+=======
+#define CKC_WRITE(Pin)      void CKC_WidgetWrite##Pin(uint8_t CKC_UNUSED &pin, const CKCParam CKC_UNUSED &CKCparam)
+
+void CKC_WidgetWrite(uint8_t ERA_UNUSED &pin, const ERaParam ERA_UNUSED &param)
+{
+
+}
+
+CKC_WRITE(V0)
+>>>>>>> 51e16ddc631f3760002cbcc7aa6247e66d06a3f3
 {
     
 }
 
+<<<<<<< HEAD
 CKC_WRITE(V5)
 {
    int a = param.getInt();
 }
 
+=======
+>>>>>>> 51e16ddc631f3760002cbcc7aa6247e66d06a3f3
 #endif
