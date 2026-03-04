@@ -26,36 +26,34 @@ public:
     void sendData(String Topic_s, String Data);
     void receiveData(String Topic_r);
     bool _connect();
-    bool CKC_subscribeTopic(const char *baseTopic, const char *Topic_ne);
+    void CKC_subscribeTopic(const char *baseTopic, const char *Topic_ne);
     void CKC_unsubscribeTopic(const char *baseTopic, const char *Topic_ne);
     void CKC_publishTopic(const char *baseTopic, const char *Topic_ne);
     void CKC_unpublishTopic(const char *baseTopic, const char *Topic_ne);
     void CKC_publishData(const char *data);
-    bool check_mode_sub(char *topic,char *mess);
+    bool check_mode_sub(char *topic, char *mess);
 
 private:
-    
 };
 // template <class MQTT>
 // inline
 // bool CKC_MQTT<MQTT>::check_mode_sub(char *topic,char *mess)
 // {
-    
+
 // }
 void mqttCallback(char *topic, byte *payload, unsigned int length)
 {
     String msg;
     for (int i = 0; i < length; i++)
         msg += (char)payload[i];
-    CKC_LOG_DEBUG("SUB_MQTT", "Topic %s  mess: %s", topic, msg);    
+    CKC_LOG_DEBUG("SUB_MQTT", "Topic %s  mess: %s", topic, msg);
 }
 
 WiFiClientSecure server;
 PubSubClient mqttClient(server);
 /* subscribeTopic */
 template <class MQTT>
-inline
-bool CKC_MQTT<MQTT>::CKC_subscribeTopic(const char *baseTopic, const char *Topic_ne)
+inline void CKC_MQTT<MQTT>::CKC_subscribeTopic(const char *baseTopic, const char *Topic_ne)
 {
     char NameTopic[100];
     snprintf(NameTopic, sizeof(NameTopic), "%s%s", baseTopic, Topic_ne);
