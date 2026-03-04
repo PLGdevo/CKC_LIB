@@ -6,6 +6,7 @@
 // #include <IPAddress.h>
 // #include <WiFiAP.h>
 #include <WiFiClient.h>
+#include<CKC/CKC_API/CKC_API.hpp>
 #include <MQTT/ESP32_MQTT.hpp>
 
 #define WIFI_AP_IP IPAddress(192, 168, 27, 1)
@@ -29,7 +30,6 @@ enum CKC_WiFI_TASK
     WIFI_DISCONNECTED,
 };
 CKC_WiFI_TASK WiFi_TASK = MODE_STA;
-CKC_MQTT MQTT;
 class CKC_PnP
 {
 public:
@@ -106,8 +106,15 @@ void CKC_PnP::CKC_state_Connect_STA()
     {
         CKC_LOG_DEBUG("WIFI", "WIFI_CONNECTED :)) ");
         CKC_LOG_DEBUG("WIFI", "STA_WIFI_IP: %s", WiFi.localIP().toString());
-        CKC_LOG_DEBUG("WIFI", "STA_WIFI_PORT: %s", _sta_port);
-        MQTT.begin();
+        CKC_LOG_DEBUG("WIFI", "STA_WIFI_PORT: %s", _sta_port); 
+        serverMQTT.begin();        
+        CKC_LOG_DEBUG("TAG","\r\n"
+        "  ____  _  __   ____   " "\r\n"
+        " / ___|| |/ /  / ___|  " "\r\n"
+        "| |    | ' /  | |      " "\r\n"
+        "| |___ | . \\  | |___   " "\r\n"
+        " \\____||_|\\_\\  \\____|  " "\r\n"      
+        );
         WiFi_TASK = MODE_CONNECTED;
     }
     else
@@ -147,7 +154,15 @@ void CKC_PnP::CKC_state_Connect_AP()
 }
 void CKC_PnP::CKC_mode_connected()
 {
-    MQTT.run();
+    serverMQTT.run();
+    if (!CkC_Connected())
+    {
+        WiFi_TASK = MODE_STA;
+        CKC_LOG_DEBUG("WIFI", "RUN_STA");
+        CKC_LOG_DEBUG("WIFI", "STA_WIFI_NAME: %s", _sta_ssid);
+        CKC_LOG_DEBUG("WIFI", "STA_WIFI_PASS: %s", _sta_pass);
+        t1 = millis();        
+    }   
 }
 bool CKC_PnP::CkC_Connected()
 {
@@ -218,7 +233,7 @@ void CKC_PnP::run()
         break;
     }
     handler_button();
-    // CkC_Connected();
+    // CkC_Connected();    
 }
 
 
