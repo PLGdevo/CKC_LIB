@@ -5,7 +5,7 @@
 Topic format:
     eoh/chip/<token>/<prefix topic>
 */
-#define CKC_BASE_TOPIC "ckc/chip/"
+#define CKC_BASE_TOPIC "device/"
 
 /* Subscribe topic */
 #define CKC_SUB_PREFIX_DOWN_TOPIC               "/down"
