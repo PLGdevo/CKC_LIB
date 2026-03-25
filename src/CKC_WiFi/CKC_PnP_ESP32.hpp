@@ -1,12 +1,11 @@
 #ifndef CKC_ESP32
 #define CKC_ESP32
 
-
 #include <Arduino.h>
 // #include <IPAddress.h>
 // #include <WiFiAP.h>
 #include <WiFiClient.h>
-#include<CKC/CKC_API/CKC_API.hpp>
+#include <CKC/CKC_API.hpp>
 #include <MQTT/ESP32_MQTT.hpp>
 
 #define WIFI_AP_IP IPAddress(192, 168, 27, 1)
@@ -18,7 +17,7 @@ char STA_WIFI_PASS[32];
 
 #define AP_WIFI_NAME "CKC:"
 #define AP_WIFI_PASS "CKC@2026"
-#define AP_WIFI_IP "192.168.1.4" 
+#define AP_WIFI_IP "192.168.1.4"
 #define AP_WIFI_PORT "80"
 enum CKC_WiFI_TASK
 {
@@ -30,6 +29,7 @@ enum CKC_WiFI_TASK
     WIFI_DISCONNECTED,
 };
 CKC_WiFI_TASK WiFi_TASK = MODE_STA;
+template <class Transport>
 class CKC_PnP
 {
 public:
@@ -38,7 +38,9 @@ public:
     void CKC_state_Connect_STA();
     void CKC_state_Connect_AP();
     void CKC_mode_connected();
+    void CKC_mode_Config();
     bool CkC_Connected();
+    bool CKC_connectAP();
     void handler_button();
     void run();
 
@@ -61,12 +63,16 @@ private:
     unsigned int count_wifiConnect;
     unsigned long t0, t1, t2, t3, t4;
     String _ping;
+    int time_sta = 20000;
+    int time_ap = 30000;
 #define FLASH_BTN 0 // nút BOOT/FLASH trên ESP32 thường là GPIO0
 
     unsigned long pressStart = 0;
     bool triggered = false;
 };
-void CKC_PnP::init(const char *sta_ssid, const char *sta_pass)
+
+template <class Transport>
+inline void CKC_PnP<Transport>::init(const char *sta_ssid, const char *sta_pass)
 {
     strcpy(_sta_ssid, sta_ssid);
     strcpy(_sta_pass, sta_pass);
@@ -89,11 +95,12 @@ void CKC_PnP::init(const char *sta_ssid, const char *sta_pass)
     t1 = millis();
     pinMode(FLASH_BTN, INPUT_PULLUP); // nút kéo xuống GND khi nhấn
 }
-void CKC_PnP::CKC_state_Connect_STA()
+template <class Transport>
+inline void CKC_PnP<Transport>::CKC_state_Connect_STA()
 {
     WiFi.mode(WIFI_STA);
     WiFi.begin(_sta_ssid, _sta_pass);
-    while (WiFi.status() != WL_CONNECTED && millis() - t1 <= 20000)
+    while (WiFi.status() != WL_CONNECTED && millis() - t1 <= this->time_sta)
     {
         if (millis() - t0 > 1000)
         {
@@ -106,15 +113,19 @@ void CKC_PnP::CKC_state_Connect_STA()
     {
         CKC_LOG_DEBUG("WIFI", "WIFI_CONNECTED :)) ");
         CKC_LOG_DEBUG("WIFI", "STA_WIFI_IP: %s", WiFi.localIP().toString());
-        CKC_LOG_DEBUG("WIFI", "STA_WIFI_PORT: %s", _sta_port); 
-        serverMQTT.begin();        
-        CKC_LOG_DEBUG("TAG","\r\n"
-        "  ____  _  __   ____   " "\r\n"
-        " / ___|| |/ /  / ___|  " "\r\n"
-        "| |    | ' /  | |      " "\r\n"
-        "| |___ | . \\  | |___   " "\r\n"
-        " \\____||_|\\_\\  \\____|  " "\r\n"      
-        );
+        CKC_LOG_DEBUG("WIFI", "STA_WIFI_PORT: %s", _sta_port);
+        serverMQTT.begin();
+        CKC_LOG_DEBUG("TAG", "\r\n"
+                             "  ____  _  __   ____   "
+                             "\r\n"
+                             " / ___|| |/ /  / ___|  "
+                             "\r\n"
+                             "| |    | ' /  | |      "
+                             "\r\n"
+                             "| |___ | . \\  | |___   "
+                             "\r\n"
+                             " \\____||_|\\_\\  \\____|  "
+                             "\r\n");
         WiFi_TASK = MODE_CONNECTED;
     }
     else
@@ -133,9 +144,10 @@ void CKC_PnP::CKC_state_Connect_STA()
         t2 = millis();
     }
 }
-void CKC_PnP::CKC_state_Connect_AP()
+template <class Transport>
+inline void CKC_PnP<Transport>::CKC_state_Connect_AP()
 {
-    if (millis() - t2 > 30000)
+    if (millis() - t2 > this->time_ap)
     {
         WiFi_TASK = MODE_STA;
         CKC_LOG_DEBUG("WIFI", "RUN_STA");
@@ -151,8 +163,14 @@ void CKC_PnP::CKC_state_Connect_AP()
             t3 = millis();
         }
     }
+    if (this->CKC_connectAP())
+    {
+        WiFi_TASK = MODE_AP_STA;
+        CKC_LOG_DEBUG("WIFI", "RUN_STA_AP");
+    }
 }
-void CKC_PnP::CKC_mode_connected()
+template <class Transport>
+inline void CKC_PnP<Transport>::CKC_mode_connected()
 {
     serverMQTT.run();
     if (!CkC_Connected())
@@ -161,10 +179,17 @@ void CKC_PnP::CKC_mode_connected()
         CKC_LOG_DEBUG("WIFI", "RUN_STA");
         CKC_LOG_DEBUG("WIFI", "STA_WIFI_NAME: %s", _sta_ssid);
         CKC_LOG_DEBUG("WIFI", "STA_WIFI_PASS: %s", _sta_pass);
-        t1 = millis();        
-    }   
+        t1 = millis();
+    }
+    if (!serverMQTT._connect())
+    {
+        serverMQTT.begin();
+        
+    }
 }
-bool CKC_PnP::CkC_Connected()
+
+template <class Transport>
+inline bool CKC_PnP<Transport>::CkC_Connected()
 {
     if (WiFi.status() == WL_CONNECTED)
     {
@@ -175,7 +200,22 @@ bool CKC_PnP::CkC_Connected()
         return false;
     }
 }
-void CKC_PnP::handler_button()
+
+template <class Transport>
+inline bool CKC_PnP<Transport>::CKC_connectAP()
+{
+    if (WiFi.softAPgetStationNum() >0)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+template <class Transport>
+inline void CKC_PnP<Transport>::handler_button()
 {
 #ifdef BUTTON_MODE
     bool pressed = (digitalRead(FLASH_BTN) == LOW); // nhấn = LOW
@@ -202,8 +242,6 @@ void CKC_PnP::handler_button()
             WiFi.softAP(_ap_ssid, _ap_pass);
             t2 = millis();
             // TODO: đặt lệnh bạn muốn ở đây
-
-
         }
     }
     else
@@ -216,27 +254,38 @@ void CKC_PnP::handler_button()
 
 #endif
 }
-void CKC_PnP::run()
+
+template <class Transport>
+inline void CKC_PnP<Transport>::CKC_mode_Config()
+{
+    if (!CKC_connectAP())
+    {
+        /* code */
+    }
+    
+};
+
+template <class Transport>
+inline void CKC_PnP<Transport>::run()
 {
     switch (WiFi_TASK)
     {
     case MODE_STA:
-        CKC_state_Connect_STA();
+        this->CKC_state_Connect_STA();
         break;
     case MODE_AP:
-        CKC_state_Connect_AP();
+        this->CKC_state_Connect_AP();
         break;
     case MODE_CONNECTED:
-        CKC_mode_connected();
+        this->CKC_mode_connected();
+        break;
+    case MODE_AP_STA:
+        this->CKC_mode_Config();
         break;
     default:
         break;
     }
-    handler_button();
-    // CkC_Connected();    
+    this->handler_button();
 }
 
-
 #endif
-
-
