@@ -14,6 +14,14 @@
                                 }
 
 
+{
+    "control_id": 35,
+    "uuid": "5f841df7-ca4d-4c31-aebb-b99548c45d5c",
+    "data": {
+        "pin": "V1",
+    "value": 1
+    }
+}
 
 */
 #ifndef INC_CKC_API_HPP_
@@ -54,7 +62,11 @@ public:
     void handleMessage(const char *topic, const char *payload);
     void dowm(const char *payload);
     void handlerVirtual_Pin(const char *payload);
+    void handlerVirtual_telemetry(const char *payload);
     void handlerArduino_Pin(const char *payload);
+    void virtualWrite(uint16_t pin, const CKCParam &param);
+    void WRITE(uint8_t pinV,const CKCParam& param);
+    void READ(uint8_t pinV,const CKCParam& param);
 
 private:
     int Pin;
@@ -64,7 +76,14 @@ private:
 #define CKC_API_SUB_PREFIX_DOWN_TOPIC "down"
 #define CKC_API_SUB_PREFIX_ARDUINO_TOPIC "arduino_pin"
 #define CKC_API_SUB_PREFIX_VIRTUAL_TOPIC "virtual_pin"
-    // #define CKC_API_SUB_PREFIX_CHANGE_WIFI_TOPIC "/wifi/change"
+#define CKC_API_SUB_PREFIX_CHANGE_WIFI_TOPIC "/wifi/change"
+#ifdef CKC_100_PINS
+    String CKC_uuid_list[100];
+    int16_t CKC_ID_control[];
+#else
+    String CKC_uuid_list[50];
+    int16_t CKC_ID_control[];
+#endif
 };
 
 void CkC_APi::handleMessage(const char *topic, const char *payload)
@@ -99,11 +118,75 @@ void CkC_APi::handleMessage(const char *topic, const char *payload)
     {
         this->dowm(payload);
     }
+    else
+    {
+        this->handlerVirtual_telemetry(payload);
+    }
+}
+
+void CkC_APi::handlerVirtual_telemetry(const char *payload)
+{
+    /*
+    {
+    "data": {
+        "pin": "V1",
+    "value": 1
+    },
+    "control_id": 35,
+    "uuid": "5f841df7-ca4d-4c31-aebb-b99548c45d5c"
+}*/
+    cJSON *root = cJSON_Parse(payload);
+    if (root == NULL)
+    {
+        CKC_LOG_DEBUG("ERR", "JSON parse failed!\n");
+        return;
+    }
+
+    cJSON *data = cJSON_GetObjectItem(root, "data");
+    if (cJSON_IsObject(data))
+    {
+        // ===== Type ====
+        cJSON *Pin_type = cJSON_GetObjectItem(data, "pin");
+        if (cJSON_IsString(Pin_type) && Pin_type->valuestring != NULL)
+        {
+            CKC_LOG_DEBUG("MESS", "virtual_pin = %s", Pin_type->valuestring);
+            type = Pin_type->valuestring;
+            if (type[0] == 'V')
+            {
+                V_pin = atoi(type + 1);
+            }
+        }
+        // ===== value ====
+        cJSON *handle_value = cJSON_GetObjectItem(data, "value");
+        CKCParam val = parseItem(handle_value);
+        // ===== DISPATCH =====
+        if (V_pin < CKC_HandlerCount)
+        {
+            CKC_HandlerVector[V_pin](V_pin, val);
+        }
+        else
+        {
+            CKC_LOG_DEBUG("ERR", "Invalid pin V%d", V_pin);
+        }
+    }
+    cJSON *uuid = cJSON_GetObjectItem(root, "uuid");
+    if (cJSON_IsString(uuid))
+    {
+        CKC_uuid_list[V_pin] = uuid->valuestring;
+        CKC_LOG_DEBUG("json sub", "uuid : %s", CKC_uuid_list[V_pin].c_str());
+    }
+
+    cJSON *control_id = cJSON_GetObjectItem(root, "control_id");
+    if (cJSON_IsNumber(control_id))
+    {
+        CKC_ID_control[V_pin] = control_id->valueint;
+        CKC_LOG_DEBUG("json sub", "id_control : %d", CKC_ID_control[V_pin]);
+    }
+    cJSON_Delete(root);
 }
 
 void CkC_APi::handlerArduino_Pin(const char *payload)
 {
-
     cJSON *root = cJSON_Parse(payload);
     if (root == NULL)
     {
@@ -166,6 +249,7 @@ void CkC_APi::handlerArduino_Pin(const char *payload)
     }
     cJSON_Delete(root);
 }
+
 void CkC_APi::handlerVirtual_Pin(const char *payload)
 {
     cJSON *root = cJSON_Parse(payload);
@@ -274,9 +358,10 @@ void CkC_APi::dowm(const char *payload)
 
     cJSON_Delete(root);
 }
-
+void CkC_APi::WRITE(uint8_t pinV,const CKCParam& param)
+{
+   
+}
 CkC_APi API_MESS;
 
 #endif // INC_CKC_API_HPP_
-
-// }

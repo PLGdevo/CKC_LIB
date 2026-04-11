@@ -26,6 +26,13 @@ void loop()
   CKC.run();  
   if (CKC.CkC_Connected())  {digitalWrite(26, 1);}
   else                       {digitalWrite(26, 0);}
+  if (millis() - time_P > 1000)
+  {
+    time_P = millis();
+    float value = (sin(t) + 1) * 10 + 50;
+    t += 0.1;
+    CKC.Write(V10, value);
+  }
   
 }
 

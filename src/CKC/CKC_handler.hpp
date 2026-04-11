@@ -5,6 +5,8 @@
 
 #include <stdint.h>
 
+// #define CKC_100_PINS
+
 // ===== Forward =====
 class CKCParam;
 
@@ -145,5 +147,6 @@ extern const uint8_t CKC_HandlerCount;
 
 // ===== Default fallback =====
 void CKC_WidgetWrite_Default(uint8_t pin, const CKCParam& param);
+
 
 #endif

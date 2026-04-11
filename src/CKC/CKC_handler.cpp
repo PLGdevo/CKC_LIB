@@ -16,7 +16,6 @@ void __attribute__((weak)) CKC_WidgetWrite##n(uint8_t pin, const CKCParam& param
 }
 
 CKC_VPIN_LIST
-
 #undef X
 
 // ======================================================
@@ -33,3 +32,4 @@ const handlerWidget_pin CKC_HandlerVector[] = {
 // ===== COUNT =====
 const uint8_t CKC_HandlerCount =
     sizeof(CKC_HandlerVector) / sizeof(CKC_HandlerVector[0]);
+

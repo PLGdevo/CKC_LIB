@@ -178,12 +178,12 @@ CKCParam parseItem(cJSON *item)
         if (val == (int)val)
         {
             value.set((int)val);
-            CKC_LOG_DEBUG("PARAM", "value int : %d", value.getInt());
+            // CKC_LOG_DEBUG("PARAM", "value int : %d", value.getInt());
         }
         else
         {
             value.set((float)val);            
-            CKC_LOG_DEBUG("PARAM", "value float : %f", value.getFloat());
+            // CKC_LOG_DEBUG("PARAM", "value float : %f", value.getFloat());
         }
     }
     else if (cJSON_IsBool(item))
@@ -194,7 +194,7 @@ CKCParam parseItem(cJSON *item)
     else if (cJSON_IsString(item))
     {
         value.set(item->valuestring);        
-        CKC_LOG_DEBUG("PARAM", "value string : %s", item->valuestring);
+        // CKC_LOG_DEBUG("PARAM", "value string : %s", item->valuestring);
     }
     else
     {
