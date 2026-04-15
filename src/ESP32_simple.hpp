@@ -1,9 +1,7 @@
 #ifndef ESP32_simple
 #define ESP32_simple
 
-#include <CKC/CKC_debug.hpp>
-#include <CKC_WiFi/CKC_PnP_ESP32.hpp>
+#include <CKC/CKC_protocal.hpp>
 
-CKC_PnP<CKC_MQTT<PubSubClient>> CKC;
 
 #endif
