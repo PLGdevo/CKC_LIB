@@ -16,7 +16,7 @@ public:
     void run();
     bool connected();
     void WriteControl(uint8_t pinV, float param);
-    void WriteTelemetry();
+    void WriteTelemetry(uint8_t pinV, float param);
 };
 
 CKC_Protocall::CKC_Protocall(/* args */)
@@ -55,6 +55,16 @@ void CKC_Protocall::WriteControl(uint8_t pinV, float param)
     }
 
     // API_MESS.WRITE(pinV,param);
+}
+void CKC_Protocall::WriteTelemetry(uint8_t pinV, float param)
+{
+    if (this->CKC_PNP.CkC_Connected())
+    {
+        CKC_LOG_DEBUG("WRITE", "Pin V%d   value: %f  ", pinV, param);
+        String MAC = WiFi.macAddress();        
+        String PLG = "{\"mac_address\":\"" + String(MAC) + "\",\"data\":{\"value\":" + String(param, 2) + "}}";
+        serverMQTT.CKC_publishData(PLG);
+    }    
 }
 
 CKC_Protocall CKC;
