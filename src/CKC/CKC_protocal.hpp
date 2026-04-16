@@ -8,7 +8,6 @@ class CKC_Protocall
 {
 private:
     CKC_PnP<CKC_MQTT<PubSubClient>> CKC_PNP;
-
 public:
     CKC_Protocall(/* args */);
     ~CKC_Protocall();
@@ -26,6 +25,7 @@ CKC_Protocall::CKC_Protocall(/* args */)
 
 CKC_Protocall::~CKC_Protocall()
 {
+
 }
 
 void CKC_Protocall::begin(const char *sta_ssid, const char *sta_pass)
@@ -47,7 +47,6 @@ void CKC_Protocall::WriteControl(uint8_t pinV, float param)
 {
     if (this->CKC_PNP.CkC_Connected())
     {
-
         CKC_LOG_DEBUG("WRITE", "Pin V%d   value: %f  ", pinV, param);
         String MAC = WiFi.macAddress();        
         String PLG = "{\"mac_address\":\"" + String(MAC) + "\",\"data\":{\"value\":" + String(param, 2) + "}}";
