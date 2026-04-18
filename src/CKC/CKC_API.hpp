@@ -39,11 +39,7 @@ typedef enum
     PIN_DI,
     PIN_AI,
     PIN_AO,
-    PIN_UNKNOWN
-    ////
-    /////////////////////////////////
-    ////////////////
-    /////////////
+    PIN_UNKNOWN 
 } PinType_t;
 
 PinType_t parsePinType(const char *type)
