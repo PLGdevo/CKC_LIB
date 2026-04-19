@@ -12,7 +12,8 @@
 CKC IoT Library là thư viện hỗ trợ xây dựng hệ thống IoT nhanh chóng, linh hoạt và dễ mở rộng.
 Được phát triển bởi sinh viên Cao Thắng, thư viện hướng đến việc tối ưu giao tiếp giữa thiết bị và server.
 
-***✨ Tính năng chính
+***
+✨ Tính năng chính
 📡 Gửi dữ liệu  lên server
 
 🎛 Nhận lệnh điều khiển từ app/web
@@ -26,7 +27,8 @@ MQTT
 Serial
 HTTP (có thể mở rộng)
 
-***🧰 Nền tảng hỗ trợ
+***
+🧰 Nền tảng hỗ trợ
 ESP32
 STM32
 Arduino
@@ -38,13 +40,15 @@ Tải thư viện về
 Import vào Arduino IDE:
 Sketch → Include Library → Add .ZIP Library
 
-***📥 Cài đặt
+***
+📥 Cài đặt
 PlatformIO
 Thêm vào platformio.ini:
 lib_deps =
     https://github.com/PLGdevo/CKC_LIB
 
-***🤝 Đóng góp
+***
+🤝 Đóng góp
 
 Mọi đóng góp đều được hoan nghênh!
 
