@@ -1,4 +1,4 @@
-﻿🚀 CKC IoT Library
+<img width="886" height="279" alt="image" src="https://github.com/user-attachments/assets/5ecebe79-e025-4ad8-ac69-b6c86a63d06b" />﻿🚀 CKC IoT Library
 
 CKC IoT Library là thư viện hỗ trợ xây dựng hệ thống IoT nhanh chóng, linh hoạt và dễ mở rộng.
 Được phát triển bởi sinh viên Cao Thắng, thư viện hướng đến việc tối ưu giao tiếp giữa thiết bị và server.
