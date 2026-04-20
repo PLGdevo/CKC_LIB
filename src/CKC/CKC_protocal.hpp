@@ -1,8 +1,8 @@
 #ifndef INC_CKC_PROTOCAL_HPP_
 #define INC_CKC_PROTOCAL_HPP_
 
-#include <CKC/CKC_debug.hpp>
-#include <CKC_WiFi/CKC_PnP_ESP32.hpp>
+#include <CkC/CKC_debug.hpp>
+#include <CkC_WiFi/CKC_PnP_ESP32.hpp>
 
 class CKC_Protocall
 {
