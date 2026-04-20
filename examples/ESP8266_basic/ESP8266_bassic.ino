@@ -30,33 +30,68 @@
  */
 
 
-// Enable debug console
+// Bật debug log ra Serial Monitor
 #define CKC_DEBUG
+
+// Bật chế độ nút nhấn (tuỳ thư viện bạn xử lý)
 #define BUTTON_MODE
 
+// Thông tin WiFi
 const char *SSID = "CKC";
 const char *PASS = "CKC2026";
 
+// Include thư viện chính
 #include <CKC.h>
 
+// Biến lưu thời gian để gửi dữ liệu định kỳ
+int32_t time_P = 0;
+
+
+
+/*
+==========================================================
+  SETUP
+==========================================================
+*/
 void setup()
 {
-  Serial.begin(115200);
-  pinMode(26, OUTPUT);
-  CKC.init(SSID, PASS);  
+  Serial.begin(115200);     // Khởi tạo Serial
+  pinMode(26, OUTPUT);      // LED báo trạng thái
+
+  // Kết nối WiFi + Server CKC
+  CKC.begin(SSID, PASS);  
+
+  // Khai báo các key telemetry sẽ gửi lên server
+  CKC.set_Telemetry("TEM","HUM");
 }
 
+
+/*
+==========================================================
+  LOOP
+==========================================================
+*/
 void loop()
 {
+  // Hàm chạy chính của thư viện (bắt buộc)
   CKC.run();  
-  if (CKC.CkC_Connected())  {digitalWrite(26, 1);}
-  else                       {digitalWrite(26, 0);}
+
+  // Kiểm tra trạng thái kết nối
+  if (CKC.connected())
+  {
+    digitalWrite(26, 1);  // Có kết nối server → bật LED
+  }
+  else
+  {
+    digitalWrite(26, 0);  // Mất kết nối server → tắt LED
+  }
+
+  // Gửi dữ liệu mỗi 1 giây
   if (millis() - time_P > 1000)
   {
     time_P = millis();
-    float value = (sin(t) + 1) * 10 + 50;
-    t += 0.1;
-    CKC.WriteTelemetry(V10, temp);
+
+    // Gửi dữ liệu nhiệt độ lên server
+    CKC.WriteTelemetry("TEM", 30);
   }
-  
 }
