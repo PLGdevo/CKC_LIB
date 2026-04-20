@@ -5,10 +5,10 @@
 // #include <IPAddress.h>
 // #include <WiFiAP.h>
 #include <WiFiClient.h>
-#include <CkC/CKC_API.hpp>
+#include <CKC/CKC_API.hpp>
 #include <MQTT/ESP32_MQTT.hpp>
 
-#define WIFI_AP_IP IPAddress(192, 168, 27, 1)
+// #define WIFI_AP_IP IPAddress(192, 168, 27, 1)
 #define WIFI_AP_Subnet IPAddress(255, 255, 255, 0)
 
 char STA_WIFI_NAME[32];
@@ -37,12 +37,13 @@ public:
     void init(const char *sta_ssid, const char *sta_pass);
     void CKC_state_Connect_STA();
     void CKC_state_Connect_AP();
+    void CKC_state_connect_AP_STA();
     void CKC_mode_connected();
     void CKC_mode_Config();
     bool CkC_Connected();
     bool CKC_connectAP();
     void handler_button();
-    void run();
+    void run();    
 
 private:
     IPAddress _ipAddr;
@@ -84,7 +85,7 @@ inline void CKC_PnP<Transport>::init(const char *sta_ssid, const char *sta_pass)
     CKC_LOG_DEBUG("WIFI", "STA_WIFI_PASS: %s", _sta_pass);
     CKC_LOG_DEBUG("WIFI", "STA_WIFI_IP: %s", _sta_ip);
     CKC_LOG_DEBUG("WIFI", "STA_WIFI_PORT: %s", _sta_port);
-    // CKC_LOG_DEBUG("WIFI", "STA_WIFI_IP: %s", _mac);
+    CKC_LOG_DEBUG("WIFI", "STA_WIFI_IP: %s", _mac);
 
     // CKC_LOG_DEBUG("WIFI", "AP_WIFI_NAME: %s", _ap_ssid);
     // CKC_LOG_DEBUG("WIFI", "AP_WIFI_PASS: %s", _ap_pass);
@@ -184,7 +185,6 @@ inline void CKC_PnP<Transport>::CKC_mode_connected()
     if (!serverMQTT._connect())
     {
         serverMQTT.begin();
-        
     }
 }
 
@@ -204,13 +204,46 @@ inline bool CKC_PnP<Transport>::CkC_Connected()
 template <class Transport>
 inline bool CKC_PnP<Transport>::CKC_connectAP()
 {
-    if (WiFi.softAPgetStationNum() >0)
+    if (WiFi.softAPgetStationNum() > 0)
     {
         return true;
     }
     else
     {
         return false;
+    }
+}
+
+template <class Transport>
+inline void CKC_PnP<Transport>::CKC_state_connect_AP_STA()
+{
+    int n = WiFi.scanNetworks();
+    if (n == 0)
+    {
+        Serial.println("Khong tim thay mang nao");
+    }
+    else
+    {
+        Serial.print("Tim thay ");
+        Serial.print(n);
+        Serial.println(" mang:");
+
+        for (int i = 0; i < n; ++i)
+        {
+            Serial.print(i + 1);
+            Serial.print(": ");
+
+            // Tên WiFi (SSID)
+            Serial.print(WiFi.SSID(i));
+
+            // Cường độ sóng
+            Serial.print(" | RSSI: ");
+            Serial.print(WiFi.RSSI(i));
+
+            // Loại bảo mật
+            Serial.print(" | Security: ");
+            Serial.println(WiFi.encryptionType(i));
+        }
     }
 }
 
@@ -262,7 +295,6 @@ inline void CKC_PnP<Transport>::CKC_mode_Config()
     {
         /* code */
     }
-    
 };
 
 template <class Transport>
@@ -275,12 +307,12 @@ inline void CKC_PnP<Transport>::run()
         break;
     case MODE_AP:
         this->CKC_state_Connect_AP();
-        break;
+        break;    
     case MODE_CONNECTED:
         this->CKC_mode_connected();
         break;
     case MODE_AP_STA:
-        this->CKC_mode_Config();
+        this->CKC_state_connect_AP_STA();
         break;
     default:
         break;

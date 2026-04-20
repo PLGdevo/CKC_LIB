@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <Arduino.h>
-#include <CkC/CKC_topic.h>
+#include <CKC/CKC_topic.h>
 
 #pragma
 class CKCParam
@@ -14,19 +14,23 @@ public:
         NONE = 0,
         INT,
         FLOAT,
+        DOUBLE,
         BOOL,
         STRING
     };
 
+    // Constructor mặc định
     CKCParam() : type(Type::NONE) {}
-    void add(int v) { intVal = v; }
+
     // Constructors
     CKCParam(int v) { set(v); }
     CKCParam(float v) { set(v); }
+    CKCParam(double v) { set(v); }
     CKCParam(bool v) { set(v); }
     CKCParam(const char *v) { set(v); }
     CKCParam(const String &v) { set(v); }
 
+    // ===== SET =====
     void set(int v)
     {
         type = Type::INT;
@@ -37,6 +41,12 @@ public:
     {
         type = Type::FLOAT;
         data.f = v;
+    }
+
+    void set(double v)
+    {
+        type = Type::DOUBLE;
+        data.d = v;
     }
 
     void set(bool v)
@@ -57,26 +67,32 @@ public:
         str = v;
     }
 
-    // get type data
+    // ===== GET TYPE =====
     Type getType() const { return type; }
 
+    // ===== GET INT =====
     int getInt(int def = 0) const
     {
         if (type == Type::INT)
             return data.i;
-        if (type == Type::BOOL)
-            return data.b ? 1 : 0;
         if (type == Type::FLOAT)
             return (int)data.f;
+        if (type == Type::DOUBLE)
+            return (int)data.d;
+        if (type == Type::BOOL)
+            return data.b ? 1 : 0;
         if (type == Type::STRING)
             return str.toInt();
         return def;
     }
 
+    // ===== GET FLOAT =====
     float getFloat(float def = 0) const
     {
         if (type == Type::FLOAT)
             return data.f;
+        if (type == Type::DOUBLE)
+            return (float)data.d;
         if (type == Type::INT)
             return (float)data.i;
         if (type == Type::BOOL)
@@ -86,6 +102,23 @@ public:
         return def;
     }
 
+    // ===== GET DOUBLE =====
+    double getDouble(double def = 0) const
+    {
+        if (type == Type::DOUBLE)
+            return data.d;
+        if (type == Type::FLOAT)
+            return (double)data.f;
+        if (type == Type::INT)
+            return (double)data.i;
+        if (type == Type::BOOL)
+            return data.b ? 1.0 : 0.0;
+        if (type == Type::STRING)
+            return str.toDouble(); // ESP32 OK
+        return def;
+    }
+
+    // ===== GET BOOL =====
     bool getBool(bool def = false) const
     {
         if (type == Type::BOOL)
@@ -94,11 +127,14 @@ public:
             return data.i != 0;
         if (type == Type::FLOAT)
             return data.f != 0;
+        if (type == Type::DOUBLE)
+            return data.d != 0;
         if (type == Type::STRING)
             return (str == "1" || str == "true" || str == "TRUE");
         return def;
     }
 
+    // ===== GET STRING =====
     String getString(const String &def = "") const
     {
         if (type == Type::STRING)
@@ -107,61 +143,57 @@ public:
             return String(data.i);
         if (type == Type::FLOAT)
             return String(data.f);
+        if (type == Type::DOUBLE)
+            return String(data.d, 6); // giữ precision
         if (type == Type::BOOL)
             return data.b ? "true" : "false";
         return def;
     }
 
-    // add SUB_PREFIX after parse
+    // ===== META DATA (payload parse) =====
     void addSUB_PREFIX(String subprefix_H)
     {
-
-        this->subprefix_h = subprefix_H;
+        subprefix_h = subprefix_H;
     }
-    // add payload after parse
+
     void addpin_(int Pin_H)
     {
-        this->Pin_h = Pin_H;
+        Pin_h = Pin_H;
     }
+
     void addtype_(String type_H)
     {
-        this->type_h = type_H;
+        type_h = type_H;
     }
+
     void addvalue_(int value_H)
     {
-        this->value_h = value_H;
+        value_h = value_H;
     }
-    // get payload after parse
-    int getvalue_()
-    {
-        return value_h;
-    }
-    int getpin_()
-    {
-        return Pin_h;
-    }
-    String gettype_()
-    {
-        return type_h;
-    }
-    String getsubprefix()
-    {
-        return subprefix_h;
-    }
+
+    // ===== GET META =====
+    int getvalue_() { return value_h; }
+    int getpin_() { return Pin_h; }
+    String gettype_() { return type_h; }
+    String getsubprefix() { return subprefix_h; }
 
 private:
     Type type;
+
     union
     {
         int i;
         float f;
+        double d; // thêm double
         bool b;
     } data;
-    int intVal;
+
     String str;
 
+    // payload data
     String type_h, subprefix_h;
-    int value_h, Pin_h;
+    int value_h = 0;
+    int Pin_h = 0;
 };
 
 CKCParam parseItem(cJSON *item)
