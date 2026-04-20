@@ -5,7 +5,7 @@
 // #include <IPAddress.h>
 // #include <WiFiAP.h>
 #include <WiFiClient.h>
-#include <CKC/CKC_API.hpp>
+#include <CkC/CKC_API.hpp>
 #include <MQTT/ESP32_MQTT.hpp>
 
 #define WIFI_AP_IP IPAddress(192, 168, 27, 1)

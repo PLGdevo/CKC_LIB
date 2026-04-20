@@ -9,8 +9,8 @@
 #include <MQTT/NPT_Client/NTPClient.h>
 #include <MQTT/PubSubClient/PubSubClient.h>
 #include <stdint.h>
-#include <CKC/CKC_Param.hpp>
-#include "CKC/CKC_API.hpp"
+#include <CkC/CKC_Param.hpp>
+#include "CkC/CKC_API.hpp"
 
 // #define CKC_MQTT_BASE_TOPIC CKC_BASE_TOPIC
 

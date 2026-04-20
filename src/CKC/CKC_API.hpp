@@ -28,10 +28,10 @@
 #define INC_CKC_API_HPP_
 
 #include <HTTPClient.h>
-#include <CKC/CKC_topic.h>
+#include <CkC/CKC_topic.h>
 #include "UIlty/cJSON.hpp"
-#include <CKC/CKC_Param.hpp>
-#include <CKC/CKC_handler.hpp>
+#include <CkC/CKC_Param.hpp>
+#include <CkC/CKC_handler.hpp>
 
 typedef enum
 {
