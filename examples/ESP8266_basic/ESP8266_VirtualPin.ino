@@ -46,12 +46,33 @@ const char *PASS = "CKC2026";
 // Biến lưu thời gian để gửi dữ liệu định kỳ
 int32_t time_P = 0;
 
+
+/*
+==========================================================
+  CALLBACK NHẬN DỮ LIỆU TỪ SERVER (Virtual Pin)
+==========================================================
+*/
+
+// Nhận dữ liệu từ Virtual Pin V3
+CKC_WRITE(V3)
+{
+   int a = param.getInt();  // Lấy dữ liệu kiểu int
+   CKC_LOG_DEBUG("CKC","value %d", a);  // In debug
+}
+
+// Nhận dữ liệu từ Virtual Pin V2
+CKC_WRITE(V2)
+{
+   float a = param.getFloat();  // Lấy dữ liệu kiểu float
+   CKC_LOG_DEBUG("CKC1","value %f", a);
+}
+
+
 /*
 ==========================================================
   SETUP
 ==========================================================
 */
-
 void setup()
 {
   Serial.begin(115200);     // Khởi tạo Serial
@@ -63,6 +84,7 @@ void setup()
   // Khai báo các key telemetry sẽ gửi lên server
   CKC.set_Telemetry("TEM","HUM");
 }
+
 
 /*
 ==========================================================

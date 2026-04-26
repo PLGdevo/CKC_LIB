@@ -46,12 +46,13 @@ const char *PASS = "CKC2026";
 // Biến lưu thời gian để gửi dữ liệu định kỳ
 int32_t time_P = 0;
 
+
+
 /*
 ==========================================================
   SETUP
 ==========================================================
 */
-
 void setup()
 {
   Serial.begin(115200);     // Khởi tạo Serial
@@ -63,6 +64,7 @@ void setup()
   // Khai báo các key telemetry sẽ gửi lên server
   CKC.set_Telemetry("TEM","HUM");
 }
+
 
 /*
 ==========================================================
