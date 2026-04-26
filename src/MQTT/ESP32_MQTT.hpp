@@ -28,7 +28,7 @@ public:
     bool check_mode_sub(char *topic, char *mess);
 
 private:
-    const char *MQTT_Server = "mqtt.ckc.kthd.vn";
+    const char *MQTT_Server = "mqtt.ait.caothang.edu.vn";
     const int16_t MQTT_PORT = 8883;
     const char *MQTT_ID = "emqx_MDI3NY";
     const char *MQTT_USERNAME = "";
