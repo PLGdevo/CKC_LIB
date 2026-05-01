@@ -3,7 +3,7 @@
   Download latest CKC_lib here:
       https://github.com/PLGdevo/CKC_LIB.git
 
-    CKC Website:                https://ckc.kthd.vn/login
+    CKC Website:                https://ait.caothang.edu.vn/login
     Documentation:              https://your-docs.com
     Community/Forum:            https://your-forum.com
     Follow us:                  https://www.fb.com/your-page
@@ -61,7 +61,7 @@ void setup()
   CKC.begin(SSID, PASS);  
 
   // Khai báo các key telemetry sẽ gửi lên server
-  CKC.set_Telemetry("TEM","HUM");
+  CKC.set_Telemetry("TEM","HUM",NULL);
 }
 
 /*
@@ -72,17 +72,7 @@ void setup()
 void loop()
 {
   // Hàm chạy chính của thư viện (bắt buộc)
-  CKC.run();  
-
-  // Kiểm tra trạng thái kết nối
-  if (CKC.connected())
-  {
-    digitalWrite(26, 1);  // Có kết nối server → bật LED
-  }
-  else
-  {
-    digitalWrite(26, 0);  // Mất kết nối server → tắt LED
-  }
+  CKC.run();    
 
   // Gửi dữ liệu mỗi 1 giây
   if (millis() - time_P > 1000)

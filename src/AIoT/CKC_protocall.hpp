@@ -1,7 +1,7 @@
 #ifndef INC_CKC_PROTOCAL_HPP_
 #define INC_CKC_PROTOCAL_HPP_
 
-#include <CKC/CKC_debug.hpp>
+#include <AIoT/CKC_debug.hpp>
 #include <CKC_WiFi/CKC_PnP_ESP32.hpp>
 
 class CKC_Protocall
