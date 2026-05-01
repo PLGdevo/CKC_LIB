@@ -9,8 +9,8 @@
 #include <MQTT/NPT_Client/NTPClient.h>
 #include <MQTT/PubSubClient/PubSubClient.h>
 #include <stdint.h>
-#include <CKC/CKC_Param.hpp>
-#include "CKC/CKC_API.hpp"
+#include <AIoT/CKC_Param.hpp>
+#include "AIoT/CKC_API.hpp"
 
 template <class MQTT>
 class CKC_MQTT
