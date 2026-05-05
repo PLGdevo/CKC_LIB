@@ -43,9 +43,10 @@ const char *PASS = "CKC2026";
 // Include thư viện chính
 #include <CKC.h>
 
-// Biến lưu thời gian để gửi dữ liệu định kỳ
-int32_t time_P = 0;
-
+void timeEvent()
+{
+  CKC.writeTelemetry("TEM", 30);
+}
 /*
 ==========================================================
   SETUP
@@ -60,8 +61,10 @@ void setup()
   // Kết nối WiFi + Server CKC
   CKC.begin(SSID, PASS);  
 
+  CKC.addTimeEvent(5000L, timeEvent);
+  
   // Khai báo các key telemetry sẽ gửi lên server
-  CKC.set_Telemetry("TEM","HUM",NULL);
+  CKC.setTelemetry("TEM","HUM",NULL);
 }
 
 /*
@@ -73,13 +76,4 @@ void loop()
 {
   // Hàm chạy chính của thư viện (bắt buộc)
   CKC.run();    
-
-  // Gửi dữ liệu mỗi 1 giây
-  if (millis() - time_P > 1000)
-  {
-    time_P = millis();
-
-    // Gửi dữ liệu nhiệt độ lên server
-    CKC.WriteTelemetry("TEM", 30);
-  }
 }

@@ -11,16 +11,20 @@ private:
     CkC_APi API_MESS;
     cJSON *tele_root = NULL;
     cJSON *dataObj = NULL;
+    unsigned long ait_time, ait_set_time;
 
 public:
-    CKC_Protocall(/* args */);
+    CKC_Protocall();
     ~CKC_Protocall();
     void begin(const char *sta_ssid, const char *sta_pass);
     void run();
     bool connected();
-    void set_Telemetry(const char *first, ...);
-    void WriteControl(const char *key, const CKCParam value);
-    void WriteTelemetry(const char *key, const CKCParam value);
+    void setTelemetry(const char *first, ...);
+    void writeControl(const char *key, const CKCParam value);
+    void writeTelemetry(const char *key, const CKCParam value);
+    int addTimeEvent(unsigned long time, void (*callback)());
+    void timeEvented();
+    void (*_timerCallback)() = NULL;
 };
 
 CKC_Protocall::CKC_Protocall(/* args */)
@@ -39,6 +43,30 @@ void CKC_Protocall::begin(const char *sta_ssid, const char *sta_pass)
 void CKC_Protocall::run()
 {
     this->CKC_PNP.run();
+    this->timeEvented();
+}
+
+void CKC_Protocall::timeEvented()
+{
+    unsigned long now = millis();
+
+    if (now - ait_time >= ait_set_time)
+    {
+        ait_time = now;
+
+        if (_timerCallback != NULL)
+        {
+            _timerCallback();
+        }
+    }
+}
+
+int CKC_Protocall::addTimeEvent(unsigned long time, void (*callback)())
+{
+    ait_set_time = time;
+    ait_time = millis();
+    _timerCallback = callback;
+    return 1;
 }
 
 bool CKC_Protocall::connected()
@@ -46,7 +74,7 @@ bool CKC_Protocall::connected()
     return this->CKC_PNP.CkC_Connected();
 }
 
-void CKC_Protocall::WriteControl(const char *key, const CKCParam value)
+void CKC_Protocall::writeControl(const char *key, const CKCParam value)
 {
     if (this->CKC_PNP.CkC_Connected())
     {
@@ -54,7 +82,8 @@ void CKC_Protocall::WriteControl(const char *key, const CKCParam value)
         serverMQTT.CKC_publishData(data);
     }
 }
-void CKC_Protocall::WriteTelemetry(const char *key, const CKCParam value)
+
+void CKC_Protocall::writeTelemetry(const char *key, const CKCParam value)
 {
     if (this->CKC_PNP.CkC_Connected())
     {
@@ -62,7 +91,8 @@ void CKC_Protocall::WriteTelemetry(const char *key, const CKCParam value)
         serverMQTT.CKC_publishData(data);
     }
 }
-void CKC_Protocall::set_Telemetry(const char *first, ...)
+
+void CKC_Protocall::setTelemetry(const char *first, ...)
 {
     //  CHỈ tạo 1 lần (tránh fragment heap)
     if (tele_root == NULL)
