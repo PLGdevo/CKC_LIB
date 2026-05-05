@@ -2,8 +2,7 @@
 #define CKC_ESP32
 #include <Arduino.h>
 #include <WiFiClient.h>
-#include <CKC/CKC_API.hpp>
-#include <MODBUS/CKC_ModbusESP32.hpp>
+#include <AIoT/CKC_API.hpp>
 #include <MQTT/ESP32_MQTT.hpp>
 #include <WebServer.h>
 #include <Preferences.h>
