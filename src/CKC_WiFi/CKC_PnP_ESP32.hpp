@@ -2,7 +2,8 @@
 #define CKC_ESP32
 #include <Arduino.h>
 #include <WiFiClient.h>
-#include <AIoT/CKC_API.hpp>
+#include <CKC/CKC_API.hpp>
+#include <MODBUS/CKC_ModbusESP32.hpp>
 #include <MQTT/ESP32_MQTT.hpp>
 #include <WebServer.h>
 #include <Preferences.h>
@@ -44,6 +45,8 @@ public:
     void CKC_state_Connect_STA();
     void STA();
     void CKC_state_Connect_AP();
+    void AP();
+    void Try_Connect();
     void CKC_mode_connected();
     bool CkC_Connected();
     void run();
@@ -68,16 +71,31 @@ private:
     unsigned long t0, t1, t2, t3, t4;
     int time_sta = 10000;
 
+    int reconnect_count = 0;
+    unsigned long lastAttemp = 0;
+    const unsigned long retryDelay = 10000;
+    bool isconnecting = false;
+    unsigned long connectStart = 0;
+
+    bool manual_config = false;
+    unsigned long lastUserconfig = 0;
+    const unsigned long userTimeout = 120000;
+
 #define FLASH_BTN 0 // nút BOOT/FLASH trên ESP32 thường là GPIO0
     unsigned long pressStart = 0;
     bool triggered = false;
 
     String newSSID;
     String newPASS;
+
 #define WiFi_MAX 5
-    String ssid_list[WiFi_MAX];
-    String pass_list[WiFi_MAX];
-    int RSSI_list[WiFi_MAX];
+    // ===== WIFI ĐÃ LƯU (AUTO CONNECT) =====
+    String saved_ssid[WiFi_MAX];
+    String saved_pass[WiFi_MAX];
+
+    // ===== WIFI SCAN (HIỂN THỊ WEB) =====
+    String scan_ssid[WiFi_MAX];
+    int scan_rssi[WiFi_MAX];
 };
 template <class Transport>
 inline void CKC_PnP<Transport>::init(const char *sta_ssid, const char *sta_pass)
@@ -98,15 +116,77 @@ inline void CKC_PnP<Transport>::init(const char *sta_ssid, const char *sta_pass)
 template <class Transport>
 inline void CKC_PnP<Transport>::SaveWiFi(String newSSID, String newPASS)
 {
-    prefs.begin("wifi", false);
+
+    // if (newSSID.length() == 0)
+    //     return;
+
+    // if (!prefs.begin("wifi", false))
+    //     return;
+    // for (int i = WiFi_MAX - 1; i > 0; i--)
+    // {
+    //     saved_ssid[i] = saved_ssid[i - 1];
+    //     saved_pass[i] = saved_pass[i - 1];
+    // }
+    // saved_ssid[0] = newSSID;
+    // saved_pass[0] = newPASS;
+    // for (int i = 0; i < WiFi_MAX; i++)
+    // {
+    //     String k1 = "ssid" + String(i);
+    //     String k2 = "pass" + String(i);
+    //     prefs.putString(k1.c_str(), saved_ssid[i]);
+    //     prefs.putString(k2.c_str(), saved_pass[i]);
+    // }
+    // prefs.end();
+    // CKC_LOG_DEBUG("WIFI", "SAVE WIFI DONE: %s", newSSID.c_str());
+
+    if (newSSID.length() == 0)
+        return;
+
+    if (!prefs.begin("wifi", false))
+    {
+        CKC_LOG_DEBUG("WIFI", "NVS OPEN FAIL");
+        return;
+    }
+
+    for (int i = 0; i < WiFi_MAX; i++)
+    {
+        if (saved_ssid[i] == newSSID)
+        {
+            CKC_LOG_DEBUG("WIFI", "SSID EXISTS -> SKIP SAVE");
+            prefs.end();
+            return;
+        }
+    }
+
     for (int i = WiFi_MAX - 1; i > 0; i--)
     {
-        prefs.putString(("ssid" + String(i)).c_str(), ssid_list[i - 1]);
-        prefs.putString(("pass" + String(i)).c_str(), pass_list[i - 1]);
+        saved_ssid[i] = saved_ssid[i - 1];
+        saved_pass[i] = saved_pass[i - 1];
     }
-    prefs.putString("ssid0", newSSID);
-    prefs.putString("pass0", newPASS);
+
+    saved_ssid[0] = newSSID;
+    saved_pass[0] = newPASS;
+
+    for (int i = 0; i < WiFi_MAX; i++)
+    {
+        String keyS = "ssid" + String(i);
+        String keyP = "pass" + String(i);
+
+        if (saved_ssid[i].length() == 0)
+        {
+            prefs.remove(keyS.c_str());
+            prefs.remove(keyP.c_str());
+        }
+        else
+        {
+            prefs.putString(keyS.c_str(), saved_ssid[i]);
+            prefs.putString(keyP.c_str(), saved_pass[i]);
+        }
+    }
+
     prefs.end();
+
+    CKC_LOG_DEBUG("WIFI", "SAVE WIFI DONE: %s", newSSID.c_str());
 }
 
 template <class Transport>
@@ -117,56 +197,66 @@ inline void CKC_PnP<Transport>::handleSave()
     strcpy(_sta_ssid, newSSID.c_str());
     strcpy(_sta_pass, newPASS.c_str());
     webServer.send(200, "text/html", "<h3>WIFI CONNECTING...!!!</h3>");
+    manual_config = false;
     WiFi_TASK = MODE_STA; // chuyển sang STA để test connect
 }
 
 template <class Transport>
 inline void CKC_PnP<Transport>::loadWiFi()
 {
-    prefs.begin("wifi", true);
+    if (!prefs.begin("wifi", true))
+        return;
+
     for (int i = 0; i < WiFi_MAX; i++)
     {
-        ssid_list[i] = prefs.getString(("ssid" + String(i)).c_str(), "");
-        pass_list[i] = prefs.getString(("pass" + String(i)).c_str(), "");
+        String ssid = prefs.getString(("ssid" + String(i)).c_str(), "");
+        String pass = prefs.getString(("pass" + String(i)).c_str(), "");
+
+        if (ssid.length() > 0)
+        {
+            saved_ssid[i] = ssid;
+            saved_pass[i] = pass;
+        }
+        else
+        {
+            saved_ssid[i] = "";
+            saved_pass[i] = "";
+        }
     }
+
     prefs.end();
 }
 
 template <class Transport>
 inline void CKC_PnP<Transport>::handleScan()
 {
-    // CKC_LOG_DEBUG("WIFI", "WiFi SCANNING !!!!!!");
     int n = WiFi.scanNetworks();
     if (n <= 0)
-    {
-        // CKC_LOG_DEBUG("WIFI", "NO WIFI FOUND");
         return;
-    }
     CKC_LOG_DEBUG("WIFI", "Found %d networks", n);
     int count = min(n, WiFi_MAX);
     for (int i = 0; i < count; i++)
     {
-        ssid_list[i] = WiFi.SSID(i);
-        RSSI_list[i] = WiFi.RSSI(i);
-        // CKC_LOG_DEBUG("WIFI", "WiFi %d", i);
-        // CKC_LOG_DEBUG("WIFI", "SSID: %s", ssid_list[i].c_str());
-        // CKC_LOG_DEBUG("WIFI", "RSSI: %d dBm", WiFi.RSSI(i));
+        scan_ssid[i] = WiFi.SSID(i);
+        scan_rssi[i] = WiFi.RSSI(i);
     }
     for (int i = count; i < WiFi_MAX; i++)
     {
-        ssid_list[i] = "";
+        scan_ssid[i] = "";
+        scan_rssi[i] = 0;
     }
     WiFi.scanDelete();
 }
+
 template <class Transport>
 inline String CKC_PnP<Transport>::htmlPage()
 {
     String options = "";
     for (int i = 0; i < WiFi_MAX; i++)
     {
-        if (ssid_list[i] != "")
+        if (scan_ssid[i] != "")
         {
-            int rssi = RSSI_list[i];
+            int rssi = scan_rssi[i];
             int level = 1;
             if (rssi > -60)
                 level = 4;
@@ -174,10 +264,8 @@ inline String CKC_PnP<Transport>::htmlPage()
                 level = 3;
             else if (rssi > -80)
                 level = 2;
-            else
-                level = 1;
-            options += "<option value='" + ssid_list[i] + "' data-level='" + String(level) + "'>";
-            options += ssid_list[i] + " (" + String(rssi) + " dBm)";
+            options += "<option value='" + scan_ssid[i] + "' data-level='" + String(level) + "'>";
+            options += scan_ssid[i] + " (" + String(rssi) + " dBm)";
             options += "</option>";
         }
     }
@@ -326,15 +414,47 @@ inline String CKC_PnP<Transport>::htmlPage()
     return page;
 }
 
+template <class Transport>
+inline void CKC_PnP<Transport>::Try_Connect()
+{
+    if (WiFi.status() == WL_CONNECTED)
+        return;
+    if (isconnecting)
+    {
+        if (millis() - connectStart > time_sta)
+        {
+            isconnecting = false;
+            reconnect_count++;
+        }
+        return;
+    }
+    if (millis() - lastAttemp < retryDelay)
+        return;
+    lastAttemp = millis();
+    if (reconnect_count >= WiFi_MAX)
+        reconnect_count = 0;
+    String ssid = saved_ssid[reconnect_count];
+    String pass = saved_pass[reconnect_count];
+    if (ssid == "")
+    {
+        reconnect_count++;
+        return;
+    }
+    CKC_LOG_DEBUG("WIFI", "TRY: %s", ssid.c_str());
+    WiFi.begin(ssid.c_str(), pass.c_str());
+    isconnecting = true;
+    connectStart = millis();
+}
+
 //========== STA MODE ==========//
 template <class Transport>
 inline void CKC_PnP<Transport>::CKC_state_Connect_STA()
 {
     webServer.stop();
-    this->loadWiFi();
-    // ==============================
-    // ƯU TIÊN WIFI TỪ INIT()
-    // ==============================
+    loadWiFi();
+    // =========================
+    // 1. ƯU TIÊN WIFI INIT
+    // =========================
     if (strlen(_sta_ssid) > 0)
     {
         t1 = millis();
@@ -342,17 +462,17 @@ inline void CKC_PnP<Transport>::CKC_state_Connect_STA()
         WiFi.disconnect(true);
         delay(200);
         WiFi.begin(_sta_ssid, _sta_pass);
-        CKC_LOG_DEBUG("WIFI", "TRY CONNECTING TO: %s", _sta_ssid);
-        while (WiFi.status() != WL_CONNECTED && millis() - t1 <= this->time_sta)
+        CKC_LOG_DEBUG("WIFI", "TRY CONNECT INIT WIFI: %s", _sta_ssid);
+        while (WiFi.status() != WL_CONNECTED && millis() - t1 <= time_sta)
         {
-            if (millis() - t0 > 1000)
+            if (millis() - t0 >= 1000)
             {
-                CKC_LOG_DEBUG("WIFI", "CONNECTING ___ %ds\r", (millis() - t1) / 1000);
+                CKC_LOG_DEBUG("WIFI", "CONNECTING... %ds", (millis() - t1) / 1000);
                 t0 = millis();
             }
             if (WiFi_TASK == MODE_AP)
             {
-                CKC_LOG_DEBUG("WIFI", "BREAK WIFI CONNECT !!!!!! ");
+                CKC_LOG_DEBUG("WIFI", "BREAK CONNECT -> AP MODE");
                 return;
             }
             delay(10);
@@ -360,63 +480,65 @@ inline void CKC_PnP<Transport>::CKC_state_Connect_STA()
         }
         if (WiFi.status() == WL_CONNECTED)
         {
-            this->STA();
+            SaveWiFi(_sta_ssid, _sta_pass);
+            STA();
             return;
         }
     }
+    // =========================
+    // 2. SCAN WIFI XUNG QUANH
+    // =========================
     WiFi.mode(WIFI_STA);
     WiFi.disconnect(true);
     delay(200);
-    CKC_LOG_DEBUG("WIFI", "LOAD WIFI FORM ESP32 !!!!!! ");
+    CKC_LOG_DEBUG("WIFI", "SCANNING WIFI...");
     int n = WiFi.scanNetworks();
     if (n <= 0)
     {
-        CKC_LOG_DEBUG("WIFI", "NO_WIFI_CONNECT !!!!!! ");
+        CKC_LOG_DEBUG("WIFI", "NO WIFI FOUND -> SWITCH AP");
         mqttClient.disconnect();
         WiFi_TASK = MODE_AP;
         return;
     }
+    // =========================
+    // 3. TRY CONNECT SAVED WIFI
+    // =========================
     for (int j = 0; j < WiFi_MAX; j++)
     {
-        if (ssid_list[j] == "")
+        if (saved_ssid[j].length() == 0)
             continue;
-        for (int i = 0; i < n; i++)
+        CKC_LOG_DEBUG("WIFI", "FOUND MATCH: %s", saved_ssid[j].c_str());
+        t1 = millis();
+        WiFi.begin(saved_ssid[j].c_str(), saved_pass[j].c_str());
+        while (WiFi.status() != WL_CONNECTED && millis() - t1 <= time_sta)
         {
-            if (WiFi.SSID(i) == ssid_list[j])
+            if (millis() - t0 > 1000)
             {
-                CKC_LOG_DEBUG("WIFI", "Connecting to: %s", ssid_list[j].c_str());
-                t1 = millis();
-                WiFi.begin(ssid_list[j].c_str(), pass_list[j].c_str());
-                while (WiFi.status() != WL_CONNECTED && millis() - t1 <= this->time_sta)
-                {
-                    if (millis() - t0 > 1000)
-                    {
-                        CKC_LOG_DEBUG("WIFI", "CONNECTING ___ %ds\r", (millis() - t1) / 1000);
-                        t0 = millis();
-                    }
-                    if (WiFi_TASK == MODE_AP)
-                    {
-                        CKC_LOG_DEBUG("WIFI", "BREAK WIFI CONNECT !!!!!! ");
-                        return;
-                    }
-                    delay(10);
-                    handler_button();
-                }
-                if (WiFi.status() == WL_CONNECTED)
-                {
-                    this->STA();
-                    return;
-                }
-                else
-                {
-                    CKC_LOG_DEBUG("WIFI", "WIFI_CONNECT_FALSE !!!!!! ");
-                    CKC_LOG_DEBUG("WIFI", "TRY_ANOTHER_WIFI!!!");
-                }
+                CKC_LOG_DEBUG("WIFI", "CONNECTING... %ds", (millis() - t1) / 1000);
+                t0 = millis();
             }
+            if (WiFi_TASK == MODE_AP)
+            {
+                CKC_LOG_DEBUG("WIFI", "BREAK CONNECT -> AP MODE");
+                return;
+            }
+            delay(10);
+            handler_button();
         }
+        if (WiFi.status() == WL_CONNECTED)
+        {
+            SaveWiFi(saved_ssid[j].c_str(), saved_pass[j].c_str());
+            STA();
+            return;
+        }
+        CKC_LOG_DEBUG("WIFI", "FAILED WIFI: %s", saved_ssid[j].c_str());
     }
-    CKC_LOG_DEBUG("WIFI", "NO_WIFI_CONNECT !!!!!! ");
+    // =========================
+    // 4. FAIL -> AP MODE
+    // =========================
+    CKC_LOG_DEBUG("WIFI", "NO WIFI CONNECTED -> AP MODE");
     mqttClient.disconnect();
+    manual_config = false;
     WiFi_TASK = MODE_AP;
     delay(100);
 }
@@ -424,7 +546,6 @@ inline void CKC_PnP<Transport>::CKC_state_Connect_STA()
 template <class Transport>
 inline void CKC_PnP<Transport>::STA()
 {
-    SaveWiFi(String(_sta_ssid), String(_sta_pass));
     CKC_LOG_DEBUG("WIFI", "WIFI_CONNECTED!!!");
     CKC_LOG_DEBUG("WIFI", "STA_WIFI_IP: %s", WiFi.localIP().toString());
     CKC_LOG_DEBUG("WIFI", "STA_WIFI_PORT: %s", _sta_port);
@@ -449,8 +570,8 @@ template <class Transport>
 inline void CKC_PnP<Transport>::CKC_state_Connect_AP()
 {
     WiFi.mode(WIFI_AP_STA);
-    this->handleScan();
-    delay(100);
+    loadWiFi();   // load saved WiFi
+    handleScan(); // scan WiFi xung quanh
     CKC_LOG_DEBUG("WIFI", "RUN_AP");
     CKC_LOG_DEBUG("WIFI", "AP_WIFI_NAME: %s", _ap_ssid);
     CKC_LOG_DEBUG("WIFI", "AP_WIFI_PASS: %s", _ap_pass);
@@ -461,15 +582,44 @@ inline void CKC_PnP<Transport>::CKC_state_Connect_AP()
     WiFi.softAPConfig(local_ip, local_ip, WIFI_AP_Subnet);
     WiFi.softAP(_ap_ssid, _ap_pass);
     webServer.on("/", [this]()
-                 { this->webServer.send(200, "text/html", this->htmlPage()); });
+                 {
+                    CKC_LOG_DEBUG("WIFI", "WEBSITE ON");
+        lastUserconfig = millis();
+        this->webServer.send(200, "text/html", this->htmlPage()); });
     webServer.on("/connect", HTTP_POST, [this]()
                  { this->handleSave(); });
     webServer.on("/scan", [this]()
-                 { this->handleScan(); this->webServer.send(200, "text/html", this->htmlPage()); });
+                 {
+        lastUserconfig = millis();
+        this->handleScan();
+        this->webServer.send(200, "text/html", this->htmlPage()); });
     webServer.begin();
-    mqttClient.disconnect();
-    delay(1000);
     WiFi_TASK = RUN_AP_WEB;
+}
+
+template <class Transport>
+inline void CKC_PnP<Transport>::AP()
+{
+    mqttClient.disconnect();
+    this->webServer.handleClient();
+
+    if (manual_config)
+    {
+        return; // không auto connect
+    }
+
+    if (millis() - lastUserconfig < userTimeout)
+    {
+        return; // thời gian để User có thể vào Web
+    }
+    Try_Connect();
+
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        CKC_LOG_DEBUG("WIFI", "CONNECTED -> EXIT AP");
+        WiFi.softAPdisconnect(true);
+        STA();
+    }
 }
 
 //========== CONNECTED MODE ==========//
@@ -489,17 +639,20 @@ inline bool CKC_PnP<Transport>::CkC_Connected()
 template <class Transport>
 inline void CKC_PnP<Transport>::CKC_mode_connected()
 {
-    if (!CkC_Connected())
+    if (WiFi.status() != WL_CONNECTED)
     {
         CKC_LOG_DEBUG("WIFI", "LOST WIFI !!!!!");
         mqttClient.disconnect();
         WiFi_TASK = MODE_STA;
         return;
     }
-    if (CkC_Connected())
+    if (WiFi.status() == WL_CONNECTED)
     {
-        serverMQTT.run();
-        if (!serverMQTT._connect())
+        if (serverMQTT._connect())
+        {
+            serverMQTT.run();
+        }
+        else
         {
             static unsigned long lastMQTTReconnect = 0;
             if (millis() - lastMQTTReconnect > 5000)
@@ -526,6 +679,7 @@ inline void CKC_PnP<Transport>::handler_button()
         {
             triggered = true;
             mqttClient.disconnect();
+            manual_config = true;
             WiFi_TASK = MODE_AP;
             CKC_LOG_DEBUG("WIFI", "BUTTON TRIGGER");
         }
@@ -554,8 +708,7 @@ inline void CKC_PnP<Transport>::run()
         this->CKC_mode_connected();
         break;
     case RUN_AP_WEB:
-        mqttClient.disconnect();
-        this->webServer.handleClient();
+        this->AP();
         break;
     default:
         break;
