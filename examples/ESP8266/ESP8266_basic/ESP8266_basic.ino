@@ -3,7 +3,7 @@
   Download latest CKC_lib here:
       https://github.com/PLGdevo/CKC_LIB.git
 
-    CKC Website:                https://ait.caothang.edu.vn/login
+    CKC Website:                https://ckc.kthd.vn/login
     Documentation:              https://your-docs.com
     Community/Forum:            https://your-forum.com
     Follow us:                  https://www.fb.com/your-page
@@ -40,32 +40,35 @@
 const char *SSID = "CKC";
 const char *PASS = "CKC2026";
 
+// thông tin bao mật người dùng từ ait.caothang.edu.vn → Hồ sơ:
+const char *USER_SERVER = "xxxxxxxxxx@caothang.edu.vn";
+const char *PASS_SERVER = "xxxxxxxxxxxxxx";
+
 // Include thư viện chính
 #include <CKC.h>
 
-void timeEvent()
-{
-  CKC.writeTelemetry("TEM", 30);
-}
+// Biến lưu thời gian để gửi dữ liệu định kỳ
+int32_t time_P = 0;
+
+
+
 /*
 ==========================================================
   SETUP
 ==========================================================
 */
-
 void setup()
 {
   Serial.begin(115200);     // Khởi tạo Serial
   pinMode(26, OUTPUT);      // LED báo trạng thái
 
   // Kết nối WiFi + Server CKC
-  CKC.begin(SSID, PASS);  
+  CKC.begin(SSID, PASS,USER_SERVER,PASS_SERVER);  
 
-  CKC.addTimeEvent(5000L, timeEvent);
-  
   // Khai báo các key telemetry sẽ gửi lên server
   CKC.setTelemetry("TEM","HUM",NULL);
 }
+
 
 /*
 ==========================================================
@@ -75,5 +78,24 @@ void setup()
 void loop()
 {
   // Hàm chạy chính của thư viện (bắt buộc)
-  CKC.run();    
+  CKC.run();  
+
+  // Kiểm tra trạng thái kết nối
+  if (CKC.connected())
+  {
+    digitalWrite(26, 1);  // Có kết nối server → bật LED
+  }
+  else
+  {
+    digitalWrite(26, 0);  // Mất kết nối server → tắt LED
+  }
+
+  // Gửi dữ liệu mỗi 1 giây
+  if (millis() - time_P > 1000)
+  {
+    time_P = millis();
+
+    // Gửi dữ liệu nhiệt độ lên server
+    CKC.writeTelemetry("TEM", 30);
+  }
 }
