@@ -37,6 +37,7 @@ class CKC_PnP
 public:
     CKC_PnP() {};
     void init(const char *sta_ssid, const char *sta_pass);
+    void init(const char *sta_ssid, const char *sta_pass, const char *mqtt_userName, const char *mqtt_pass);
     void SaveWiFi(String newSSID, String newPASS);
     void handleSave();
     void loadWiFi();
@@ -99,11 +100,32 @@ private:
 template <class Transport>
 inline void CKC_PnP<Transport>::init(const char *sta_ssid, const char *sta_pass)
 {
+    WiFi.mode(WIFI_STA);
+    delay(500);
     strcpy(_sta_ssid, sta_ssid);
     strcpy(_sta_pass, sta_pass);
     String MAC = WiFi.macAddress();
     strcpy(_mac, MAC.c_str());
     snprintf(_ap_ssid, sizeof(_ap_ssid), "%s%s", _ap_ssid, _mac);
+    CKC_LOG_DEBUG("WIFI", "STA_WIFI_NAME: %s", _sta_ssid);
+    CKC_LOG_DEBUG("WIFI", "STA_WIFI_PASS: %s", _sta_pass);
+    CKC_LOG_DEBUG("WIFI", "STA_WIFI_IP: %s", _sta_ip);
+    CKC_LOG_DEBUG("WIFI", "STA_WIFI_PORT: %s", _sta_port);
+    t1 = millis();
+    pinMode(FLASH_BTN, INPUT_PULLUP); // nút kéo xuống GND khi nhấn
+}
+
+template <class Transport>
+inline void CKC_PnP<Transport>::init(const char *sta_ssid, const char *sta_pass, const char *mqtt_userName, const char *mqtt_pass)
+{
+    WiFi.mode(WIFI_STA);
+    delay(500);
+    strcpy(_sta_ssid, sta_ssid);
+    strcpy(_sta_pass, sta_pass);
+    String MAC = WiFi.macAddress();
+    strcpy(_mac, MAC.c_str());
+    snprintf(_ap_ssid, sizeof(_ap_ssid), "%s%s", _ap_ssid, _mac);
+    serverMQTT.config(mqtt_userName, mqtt_pass);
     CKC_LOG_DEBUG("WIFI", "STA_WIFI_NAME: %s", _sta_ssid);
     CKC_LOG_DEBUG("WIFI", "STA_WIFI_PASS: %s", _sta_pass);
     CKC_LOG_DEBUG("WIFI", "STA_WIFI_IP: %s", _sta_ip);
@@ -550,17 +572,22 @@ inline void CKC_PnP<Transport>::STA()
     CKC_LOG_DEBUG("WIFI", "STA_WIFI_PORT: %s", _sta_port);
     CKC_LOG_DEBUG("WIFI", "STA_WIFI_MAC: %s", _mac);
     serverMQTT.begin();
-    CKC_LOG_DEBUG("TAG", "\r\n"
-                         " ____ _ __ ____ "
+    if (serverMQTT._connect())
+    {
+        CKC_LOG_DEBUG("TAG", "\r\n"
+                         "  ____  _ __   ____ "
                          "\r\n"
                          " / ___|| |/ / / ___| "
                          "\r\n"
-                         "| | | ' / | | "
+                         "| |    | ' / | | "
                          "\r\n"
                          "| |___ | . \\ | |___ "
                          "\r\n"
                          " \\____||_|\\_\\ \\____| "
                          "\r\n");
+    }
+    
+    
     WiFi_TASK = MODE_CONNECTED;
 }
 

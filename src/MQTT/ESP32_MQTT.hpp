@@ -16,6 +16,7 @@ template <class MQTT>
 class CKC_MQTT
 {
 public:
+    void config(const char *mqtt_userName, const char *mqtt_pass);
     void begin();
     void run();
     void receiveData(String Topic_r);
@@ -30,19 +31,12 @@ public:
 private:
     const char *MQTT_Server = "mqtt.ait.caothang.edu.vn";
     const int16_t MQTT_PORT = 8883;
-    const char *MQTT_ID = "emqx_MDI3NY";
-    const char *MQTT_USERNAME = "";
-    const char *MQTT_PASS = "";
-
-    // const char *MQTT_Server = "190d175e0d5b47c9bb68f15b675c839e.s1.eu.hivemq.cloud";
-    // const int16_t MQTT_PORT = 8883;
-    // const char *MQTT_ID = "190d175e0d5b47c9bb68f15b675c839e";
-    // const char *MQTT_USERNAME = "hivemq.webclient.1775916076788";
-    // const char *MQTT_PASS = "<>Kmju@2thY!13IAw8TB";
-
+    char MQTT_ID[21];    
+    char MQTT_USERNAME[28];
+    char MQTT_PASS[21];
+//0309221163@caothang.edu.vn    i7SuL0bfnO4tNQdq4yTQ
     char CKC_MQTT_BASE_TOPIC[30] = CKC_BASE_TOPIC;
     char _mac[12];
-    
 };
 
 WiFiClientSecure server;
@@ -98,25 +92,32 @@ inline void CKC_MQTT<MQTT>::CKC_publishData(const char *data)
 }
 
 template <class MQTT>
+inline void CKC_MQTT<MQTT>::config(const char *mqtt_userName, const char *mqtt_pass)
+{
+    strcpy(MQTT_USERNAME, mqtt_userName);
+    strcpy(MQTT_PASS, mqtt_pass);
+    strcpy(MQTT_ID, mqtt_pass);
+    CKC_LOG_DEBUG("MQTT", "MQTT_PASS: %s", MQTT_ID);
+    CKC_LOG_DEBUG("MQTT", "MQTT_USERNAME: %s", MQTT_USERNAME);
+    CKC_LOG_DEBUG("MQTT", "MQTT_PASS: %s", MQTT_PASS);
+}
+
+template <class MQTT>
 inline void CKC_MQTT<MQTT>::begin()
 {
     server.setInsecure();
     mqttClient.setServer(MQTT_Server, MQTT_PORT);
     String MAC = WiFi.macAddress();
     strcpy(_mac, MAC.c_str());
-    CKC_LOG_DEBUG("MQTT", "Connecting_________");
+    CKC_LOG_DEBUG("MQTT", "CONNECTING ---> SERVER");
     if (mqttClient.connect(MQTT_ID, MQTT_USERNAME, MQTT_PASS))
         if (mqttClient.connect(MQTT_ID))
         {
-            CKC_LOG_DEBUG("MQTT", "OK");
+            CKC_LOG_DEBUG("MQTT", "CONNECTED ---> SERVER");
             mqttClient.setCallback(CKC_Callback);
             snprintf(CKC_MQTT_BASE_TOPIC, sizeof(CKC_MQTT_BASE_TOPIC), "%s%s", CKC_MQTT_BASE_TOPIC, _mac);
             this->CKC_subscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_TELEMETRY_TOPIC);
             this->CKC_subscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_CONTROL_TOPIC);
-            // this->CKC_subscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_ARDUINO_TOPIC);
-            // this->CKC_subscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_VIRTUAL_TOPIC);
-            // this->CKC_subscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_ASK_WIFI_TOPIC);
-            // this->CKC_subscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_CHANGE_WIFI_TOPIC);
         }
         else
         {
