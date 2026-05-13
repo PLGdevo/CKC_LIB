@@ -31,10 +31,10 @@
    "uuid": "5f841df7-ca4d-4c31-aebb-b99548c45d5c"
     }
     {"mcu_pin":
-            {   
+            {
                 "GPIO": "26",
                 "pinType":"DO",
-                "value": value 
+                "value": value
             }
     }
 -------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -91,11 +91,9 @@ public:
     void virtualWrite(uint16_t pin, const CKCParam &param);
     void Set_telemetry(const char *telemetry);
     void WriteControl(const char *key, const CKCParam value);
-    const char *WriteTelemetry(const char *key, const CKCParam value);   
+    const char *WriteTelemetry(const char *key, const CKCParam value);
 
 private:
-    
-
     int Pin;
     const char *type;
     const char *type_value;
@@ -126,7 +124,7 @@ void CkC_APi::handleMessage(const char *topic, const char *payload)
 
     if (sub_Prefix == CKC_API_SUB_PREFIX_CONTROL_TOPIC)
     {
-        CKC_LOG_DEBUG("Topic", "%s", sub_Prefix);
+        // CKC_LOG_DEBUG("Topic", "%s", sub_Prefix);
         this->handler_control(payload);
     }
 }
@@ -401,10 +399,12 @@ void CkC_APi::WriteControl(const char *key, const CKCParam value)
 
 const char *CkC_APi::WriteTelemetry(const char *key, const CKCParam value)
 {
-    if (!telemetry_root) return nullptr;
+    if (!telemetry_root)
+        return nullptr;
 
-    cJSON *ObjectData = cJSON_GetObjectItem(telemetry_root, "data");    
-    if (!ObjectData) return nullptr;
+    cJSON *ObjectData = cJSON_GetObjectItem(telemetry_root, "data");
+    if (!ObjectData)
+        return nullptr;
 
     cJSON *newItem = NULL;
 
@@ -415,12 +415,20 @@ const char *CkC_APi::WriteTelemetry(const char *key, const CKCParam value)
         break;
 
     case CKCParam::Type::FLOAT:
-        newItem = cJSON_CreateNumber(value.getFloat());
+    {
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%.2f", value.getFloat());
+        newItem = cJSON_CreateRaw(buf); // giữ dạng number
         break;
+    }
 
     case CKCParam::Type::DOUBLE:
-        newItem = cJSON_CreateNumber(value.getDouble());
+    {
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%.2f", value.getDouble());
+        newItem = cJSON_CreateRaw(buf); // giữ dạng number
         break;
+    }
 
     case CKCParam::Type::BOOL:
         newItem = cJSON_CreateBool(value.getBool());
@@ -434,7 +442,8 @@ const char *CkC_APi::WriteTelemetry(const char *key, const CKCParam value)
         return nullptr;
     }
 
-    if (!newItem) return nullptr;
+    if (!newItem)
+        return nullptr;
 
     cJSON *existing = cJSON_GetObjectItem(ObjectData, key);
 

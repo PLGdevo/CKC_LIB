@@ -18,6 +18,7 @@ class CKC_MQTT
 public:
     void config(const char *mqtt_userName, const char *mqtt_pass);
     void begin();
+    void disconnect();
     void run();
     void receiveData(String Topic_r);
     bool _connect();
@@ -31,10 +32,10 @@ public:
 private:
     const char *MQTT_Server = "mqtt.ait.caothang.edu.vn";
     const int16_t MQTT_PORT = 8883;
-    char MQTT_ID[21];    
+    char MQTT_ID[21];
     char MQTT_USERNAME[28];
     char MQTT_PASS[21];
-//0309221163@caothang.edu.vn    i7SuL0bfnO4tNQdq4yTQ
+
     char CKC_MQTT_BASE_TOPIC[30] = CKC_BASE_TOPIC;
     char _mac[12];
 };
@@ -96,8 +97,10 @@ inline void CKC_MQTT<MQTT>::config(const char *mqtt_userName, const char *mqtt_p
 {
     strcpy(MQTT_USERNAME, mqtt_userName);
     strcpy(MQTT_PASS, mqtt_pass);
-    strcpy(MQTT_ID, mqtt_pass);
-    CKC_LOG_DEBUG("MQTT", "MQTT_PASS: %s", MQTT_ID);
+    String MAC = WiFi.macAddress();
+    strcpy(_mac, MAC.c_str());
+    strcpy(MQTT_ID, _mac);
+    CKC_LOG_DEBUG("MQTT", "MQTT_ID: %s", MQTT_ID);
     CKC_LOG_DEBUG("MQTT", "MQTT_USERNAME: %s", MQTT_USERNAME);
     CKC_LOG_DEBUG("MQTT", "MQTT_PASS: %s", MQTT_PASS);
 }
@@ -105,24 +108,48 @@ inline void CKC_MQTT<MQTT>::config(const char *mqtt_userName, const char *mqtt_p
 template <class MQTT>
 inline void CKC_MQTT<MQTT>::begin()
 {
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        return;
+    }
+    server.stop();
+    this->disconnect();
+    delay(200);
     server.setInsecure();
     mqttClient.setServer(MQTT_Server, MQTT_PORT);
+    mqttClient.setKeepAlive(10);
+    mqttClient.setSocketTimeout(2);
+    mqttClient.setCallback(CKC_Callback);
     String MAC = WiFi.macAddress();
     strcpy(_mac, MAC.c_str());
     CKC_LOG_DEBUG("MQTT", "CONNECTING ---> SERVER");
     if (mqttClient.connect(MQTT_ID, MQTT_USERNAME, MQTT_PASS))
-        if (mqttClient.connect(MQTT_ID))
-        {
-            CKC_LOG_DEBUG("MQTT", "CONNECTED ---> SERVER");
-            mqttClient.setCallback(CKC_Callback);
-            snprintf(CKC_MQTT_BASE_TOPIC, sizeof(CKC_MQTT_BASE_TOPIC), "%s%s", CKC_MQTT_BASE_TOPIC, _mac);
-            this->CKC_subscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_TELEMETRY_TOPIC);
-            this->CKC_subscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_CONTROL_TOPIC);
-        }
-        else
-        {
-            CKC_LOG_DEBUG("MQTT", "FAILED, rc=", mqttClient.state());
-        }
+    {
+
+        snprintf(CKC_MQTT_BASE_TOPIC, sizeof(CKC_MQTT_BASE_TOPIC), "%s%s", CKC_BASE_TOPIC, _mac);
+        this->CKC_subscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_TELEMETRY_TOPIC);
+        this->CKC_subscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_CONTROL_TOPIC);
+
+        // CKC_LOG_DEBUG("MQTT", "%s%s", CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_TELEMETRY_TOPIC);
+        // CKC_LOG_DEBUG("MQTT", "%s%s", CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_CONTROL_TOPIC);
+        CKC_LOG_DEBUG("MQTT", "CONNECTED ---> SERVER");
+    }
+    else
+    {
+        CKC_LOG_DEBUG("MQTT", "FAILED, rc=", mqttClient.state());
+    }
+}
+template <class MQTT>
+inline void CKC_MQTT<MQTT>::disconnect()
+{
+    snprintf(CKC_MQTT_BASE_TOPIC, sizeof(CKC_MQTT_BASE_TOPIC), "%s%s", CKC_BASE_TOPIC, _mac);
+    this->CKC_unsubscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_TELEMETRY_TOPIC);
+    this->CKC_unsubscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_CONTROL_TOPIC);
+
+    // CKC_LOG_DEBUG("MQTT", "UN________%s%s", CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_TELEMETRY_TOPIC);
+    // CKC_LOG_DEBUG("MQTT", "UN________%s%s", CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_CONTROL_TOPIC);   
+    delay(100);
+    
 }
 
 template <class MQTT>
@@ -141,15 +168,20 @@ inline bool CKC_MQTT<MQTT>::_connect()
 template <class MQTT>
 inline void CKC_MQTT<MQTT>::run()
 {
-    if (this->_connect())
+    if (mqttClient.connected())
     {
         mqttClient.loop();
-        if (!mqttClient.connect(MQTT_ID, MQTT_USERNAME, MQTT_PASS))
-        {
-            Serial.println("FAILED");
-            this->begin();
-            return;
-        }
+    }
+    else
+    {
+        CKC_LOG_DEBUG("MQTT", "MQTT LOST");
+
+        mqttClient.disconnect();
+        server.stop();
+
+        delay(500);
+
+        this->begin();
     }
 }
 

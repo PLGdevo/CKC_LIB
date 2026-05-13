@@ -274,7 +274,7 @@ inline void CKC_PnP<Transport>::handleScan()
 }
 
 template <class Transport>
-inline const char CKC_PnP<Transport>::WebConfigHEAD[] PROGMEM = R"rawliteral(
+const char CKC_PnP<Transport>::WebConfigHEAD[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -436,7 +436,7 @@ inline const char CKC_PnP<Transport>::WebConfigHEAD[] PROGMEM = R"rawliteral(
 )rawliteral";
 
 template <class Transport>
-inline const char CKC_PnP<Transport>::WebConfigFOOT[] PROGMEM = R"rawliteral(
+const char CKC_PnP<Transport>::WebConfigFOOT[] PROGMEM = R"rawliteral(
 </select>
 
 <div id="signalView"></div>
@@ -735,6 +735,7 @@ inline void CKC_PnP<Transport>::STA()
     CKC_LOG_DEBUG("WIFI", "STA_WIFI_IP: %s", WiFi.localIP().toString());
     CKC_LOG_DEBUG("WIFI", "STA_WIFI_PORT: %s", _sta_port);
     CKC_LOG_DEBUG("WIFI", "STA_WIFI_MAC: %s", _mac);
+    
     serverMQTT.config(_mqtt_username, _mqtt_pass);
     serverMQTT.begin();
     if (serverMQTT._connect())
@@ -831,14 +832,15 @@ inline bool CKC_PnP<Transport>::CkC_Connected()
 template <class Transport>
 inline void CKC_PnP<Transport>::CKC_mode_connected()
 {
-    if (this -> !CkC_Connected())
+    if (!CkC_Connected())
     {
         CKC_LOG_DEBUG("WIFI", "LOST WIFI !!!!!");
-        mqttClient.disconnect();
+        mqttClient.disconnect();        
+        
         WiFi_TASK = MODE_STA;
         return;
     }
-    if (this -> CkC_Connected())
+    if (CkC_Connected())
     {
         if (serverMQTT._connect())
         {

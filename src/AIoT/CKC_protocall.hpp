@@ -4,7 +4,7 @@
 #include <AIoT/CKC_debug.hpp>
 #include <CKC_WiFi/CKC_PnP_ESP32.hpp>
 #include <Modbus/modbus.h>
-#include <Modbus/CKC_modbus.h>
+// #include <Modbus/CKC_modbus.h>
 
 class CKC_Protocall
 {
@@ -46,7 +46,7 @@ void CKC_Protocall::begin(const char *sta_ssid, const char *sta_pass)
 
 void CKC_Protocall::begin(const char *sta_ssid, const char *sta_pass, const char *mqtt_userName, const char *mqtt_pass)
 {
-    this->CKC_PNP.init(sta_ssid, sta_pass,mqtt_userName,mqtt_pass);
+    this->CKC_PNP.init(sta_ssid, sta_pass, mqtt_userName, mqtt_pass);
 }
 
 void CKC_Protocall::run()
@@ -80,20 +80,19 @@ int CKC_Protocall::addTimeEvent(unsigned long time, void (*callback)())
 
 bool CKC_Protocall::connected()
 {
-    if (this->CKC_PNP.CkC_Connected() && this -> serverMQTT._connect())
+    if (this->CKC_PNP.CkC_Connected() && this->serverMQTT._connect())
     {
         return 1;
-    } 
+    }
     else
     {
         return 0;
-    }   
-    
+    }
 }
 
 void CKC_Protocall::writeControl(const char *key, const CKCParam value)
 {
-    if (this->CKC_PNP.CkC_Connected())
+    if (this->CKC_PNP.CkC_Connected() && this->serverMQTT._connect())
     {
         const char *data = this->API_MESS.WriteTelemetry(key, value);
         serverMQTT.CKC_publishData(data);
@@ -101,7 +100,7 @@ void CKC_Protocall::writeControl(const char *key, const CKCParam value)
 }
 void CKC_Protocall::writeTelemetry(const char *key, const CKCParam value)
 {
-    if (this->CKC_PNP.CkC_Connected())
+    if (this->CKC_PNP.CkC_Connected() && this->serverMQTT._connect())
     {
         const char *data = this->API_MESS.WriteTelemetry(key, value);
         serverMQTT.CKC_publishData(data);
