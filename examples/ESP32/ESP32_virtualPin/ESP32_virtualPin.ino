@@ -57,8 +57,8 @@ int32_t time_P = 0;
 ==========================================================
 */
 
-// Nhận dữ liệu từ Virtual Pin V3
-CKC_WRITE(V3)
+// Nhận dữ liệu trường dữ liệu điều khiển
+CKC_WRITE(TEM)
 {
    int a = param.getInt();  // Lấy dữ liệu kiểu int
    CKC_LOG_DEBUG("CKC","value %d", a);  // In debug

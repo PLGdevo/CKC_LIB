@@ -4,8 +4,9 @@
 #include <stdint.h>
 #include <Arduino.h>
 #include <AIoT/CKC_topic.h>
+#include "UIlty/cJSON.hpp"
 
-#pragma
+#pragma once
 class CKCParam
 {
 public:

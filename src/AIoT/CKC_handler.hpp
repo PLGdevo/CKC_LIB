@@ -150,5 +150,51 @@ extern const uint8_t CKC_HandlerCount;
 // ===== Default fallback =====
 void CKC_WidgetWrite_Default(uint8_t pin, const CKCParam& param);
 
+//==================================================================//
 
+typedef void (*handlerWidget_key)(
+    const CKCParam& param);
+
+struct CKC_HandlerEntry
+{
+    const char* key;
+    handlerWidget_key handler;
+};
+
+class CKC_DataHandler
+{
+public:
+    static void add(
+        const char* key,
+        handlerWidget_key cb);
+
+    static void dispatch(
+        const char* key,
+        const CKCParam& param);
+
+private:
+    static CKC_HandlerEntry handlers[50];
+    static uint8_t count;
+};
+
+class CKC_Register
+{
+public:
+    CKC_Register(
+        const char* key,
+        handlerWidget_key cb)
+    {
+        CKC_DataHandler::add(key, cb);
+    }
+};
+
+#define CKC_WRITE(NAME)                            \
+void CKC_WidgetWrite_##NAME(const CKCParam& param);    \
+                                                       \
+static CKC_Register                                    \
+CKC_Register_##NAME(                                   \
+    #NAME,                                             \
+    CKC_WidgetWrite_##NAME);                           \
+                                                       \
+void CKC_WidgetWrite_##NAME(const CKCParam& param)
 #endif
