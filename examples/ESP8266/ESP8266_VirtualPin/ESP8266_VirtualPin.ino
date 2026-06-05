@@ -47,18 +47,14 @@ const char *PASS_SERVER = "xxxxxxxxxxxxxx";
 // Include thư viện chính
 #include <CKC.h>
 
-// Biến lưu thời gian để gửi dữ liệu định kỳ
-int32_t time_P = 0;
-
-
 /*
 ==========================================================
   CALLBACK NHẬN DỮ LIỆU TỪ SERVER (Virtual Pin)
 ==========================================================
 */
 
-// Nhận dữ liệu từ Virtual Pin V3
-CKC_WRITE(V3)
+// Nhận dữ liệu trường dữ liệu điều khiển
+CKC_WRITE(TEM)
 {
    int a = param.getInt();  // Lấy dữ liệu kiểu int
    CKC_LOG_DEBUG("CKC","value %d", a);  // In debug
@@ -71,7 +67,10 @@ CKC_WRITE(V2)
    CKC_LOG_DEBUG("CKC1","value %f", a);
 }
 
-
+void timeEvent()
+{
+  CKC.writeTelemetry("TEM",30);
+}
 /*
 ==========================================================
   SETUP
@@ -85,8 +84,8 @@ void setup()
   // Kết nối WiFi + Server CKC
   CKC.begin(SSID, PASS,USER_SERVER,PASS_SERVER); 
 
-  // Khai báo các key telemetry sẽ gửi lên server
-  CKC.setTelemetry("TEM","HUM",NULL);
+  // chu kì gửi dữ liệu lên server 5s
+  CKC.addTimeEvent(5000L, timeEvent);
 }
 
 
@@ -108,14 +107,5 @@ void loop()
   else
   {
     digitalWrite(26, 0);  // Mất kết nối server → tắt LED
-  }
-
-  // Gửi dữ liệu mỗi 1 giây
-  if (millis() - time_P > 1000)
-  {
-    time_P = millis();
-
-    // Gửi dữ liệu nhiệt độ lên server
-    CKC.writeTelemetry("TEM", 30);
-  }
+  }  
 }

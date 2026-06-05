@@ -107,21 +107,38 @@ public:
     int checkResponse(uint8_t slave, uint8_t function, uint16_t num, uint8_t *response, int len);
 
     // =========================================================
-    // READ HOLDING REGISTER (0x03)
+    // READ HOLDING REGISTER (FC03)
     // =========================================================
     int readHoldingRegister(uint8_t slave, uint16_t reg, uint16_t num, uint8_t *response);
     int readHoldingRegisterValue(uint8_t slave, uint16_t reg, uint16_t num, uint16_t *values);
 
     // =========================================================
-    // READ INPUT REGISTER (0x04)
+    // READ INPUT REGISTER (FC04)
     // =========================================================
     int readInputRegisters(uint8_t slave, uint16_t reg, uint16_t num, uint8_t *response);
     int readInputRegistersValue(uint8_t slave, uint16_t reg, uint16_t num, uint16_t *values);
 
     // =========================================================
-    // WRITE SINGLE REGISTER (0x06)
+    // WRITE REGISTER (FC06) && (FC16)
     // =========================================================
     bool writeSingleRegister(uint8_t slave, uint16_t reg, uint16_t value);
+    bool writeMultiRegister(uint8_t slave, uint16_t reg, uint16_t num, uint16_t *value);
+
+    // =========================================================
+    // WRITE COIL (FC05) && (FC15)
+    // =========================================================
+    bool writeSingleCoil(uint8_t slave, uint16_t coil, bool value);
+    bool writeMultiCoil(uint8_t slave, uint16_t coil, uint16_t num, bool *value);
+
+    // =========================================================
+    // READ COIL (FC01)
+    // =========================================================
+    int readCoils(uint8_t slave, uint16_t coil, uint16_t num, bool *value);
+
+    // =========================================================
+    // TRANSPLATE REGISTER
+    // =========================================================
+    float RegToFloat(uint16_t reg1, uint16_t reg2);
 };
 
 // ================= BEGIN =================
@@ -324,7 +341,7 @@ int CKC_ModbusESP32<Modbus>::checkResponse(uint8_t slave, uint8_t function, uint
 }
 
 // =========================================================
-// READ HOLDING REGISTER (0x03)
+// READ HOLDING REGISTER (FC03)
 // =========================================================
 template <class Modbus>
 int CKC_ModbusESP32<Modbus>::readHoldingRegister(uint8_t slave, uint16_t reg, uint16_t num, uint8_t *response)
@@ -349,7 +366,6 @@ int CKC_ModbusESP32<Modbus>::readHoldingRegister(uint8_t slave, uint16_t reg, ui
 
     return checkResponse(slave, 0x03, num, response, len);
 }
-
 template <class Modbus>
 int CKC_ModbusESP32<Modbus>::readHoldingRegisterValue(uint8_t slave, uint16_t reg, uint16_t num, uint16_t *values)
 {
@@ -378,7 +394,7 @@ int CKC_ModbusESP32<Modbus>::readHoldingRegisterValue(uint8_t slave, uint16_t re
 }
 
 // =========================================================
-// READ INPUT REGISTER (0x04)
+// READ INPUT REGISTER (FC04)
 // =========================================================
 template <class Modbus>
 int CKC_ModbusESP32<Modbus>::readInputRegisters(uint8_t slave, uint16_t reg, uint16_t num, uint8_t *response)
@@ -407,7 +423,6 @@ int CKC_ModbusESP32<Modbus>::readInputRegisters(uint8_t slave, uint16_t reg, uin
                          response,
                          len);
 }
-
 template <class Modbus>
 int CKC_ModbusESP32<Modbus>::readInputRegistersValue(uint8_t slave, uint16_t reg, uint16_t num, uint16_t *values)
 {
@@ -434,7 +449,7 @@ int CKC_ModbusESP32<Modbus>::readInputRegistersValue(uint8_t slave, uint16_t reg
 }
 
 // =========================================================
-// WRITE SINGLE REGISTER (0x06)
+// WRITE REGISTER (FC06) && (FC16)
 // =========================================================
 template <class Modbus>
 bool CKC_ModbusESP32<Modbus>::writeSingleRegister(uint8_t slave, uint16_t reg, uint16_t value)
@@ -490,6 +505,285 @@ bool CKC_ModbusESP32<Modbus>::writeSingleRegister(uint8_t slave, uint16_t reg, u
     }
     delay(10);
     return true;
+}
+template <class Modbus>
+bool CKC_ModbusESP32<Modbus>::writeMultiRegister(uint8_t slave, uint16_t reg, uint16_t num, uint16_t *value)
+{
+    uint8_t frame[256];
+
+    frame[0] = slave;
+    frame[1] = 0x10; // FC16 //
+
+    frame[2] = reg >> 8;
+    frame[3] = reg & 0xFF;
+
+    frame[4] = num >> 8;
+    frame[5] = num & 0xFF;
+
+    frame[6] = num * 2; // Byte Count
+
+    for (uint16_t i = 0; i < num; i++)
+    {
+        frame[7 + i * 2] = value[i] >> 8;
+        frame[8 + i * 2] = value[i] & 0xFF;
+    }
+
+    uint16_t crc = crc16(frame, 7 + (num * 2));
+
+    frame[7 + (num * 2)] = crc & 0xFF;
+    frame[8 + (num * 2)] = crc >> 8;
+
+    int frameLen = 9 + (num * 2);
+
+    MODBUS_CHECK_DEBUG("MODBUS", "TX: ");
+    printHex(frame, frameLen);
+
+    sendBytes(frame, frameLen);
+
+    uint8_t response[8];
+
+    int len = readBytes(response, 8);
+
+    if (len != 8)
+    {
+        MODBUS_LOG_ERROR("MODBUS", "WRITE MULTI FAIL");
+        return false;
+    }
+
+    MODBUS_CHECK_DEBUG("MODBUS", "RX: ");
+    printHex(response, len);
+
+    // CRC CHECK
+    uint16_t crcCalc = crc16(response, 6);
+
+    uint16_t crcRecv =
+        response[6] |
+        (response[7] << 8);
+
+    if (crcCalc != crcRecv)
+    {
+        MODBUS_LOG_ERROR("MODBUS", "WRITE MULTI CRC FAIL");
+        return false;
+    }
+    delay(10);
+    return true;
+}
+
+// =========================================================
+// WRITE COIL (FC05) && (FC15)
+// =========================================================
+template <class Modbus>
+bool CKC_ModbusESP32<Modbus>::writeSingleCoil(uint8_t slave, uint16_t coil, bool value)
+{
+    uint8_t frame[8];
+
+    frame[0] = slave;
+    frame[1] = 0x05;
+
+    frame[2] = coil >> 8;
+    frame[3] = coil & 0xFF;
+
+    if (value)
+    {
+        frame[4] = 0xFF;
+        frame[5] = 0x00;
+    }
+    else
+    {
+        frame[4] = 0x00;
+        frame[5] = 0x00;
+    }
+
+    uint16_t crc = crc16(frame, 6);
+
+    frame[6] = crc & 0xFF;
+    frame[7] = crc >> 8;
+
+    MODBUS_CHECK_DEBUG("MODBUS", "TX: ");
+    printHex(frame, 8);
+
+    sendBytes(frame, 8);
+
+    uint8_t response[8];
+
+    int len = readBytes(response, 8);
+
+    if (len != 8)
+    {
+        MODBUS_LOG_ERROR("MODBUS", "WRITE COIL FAIL");
+        return false;
+    }
+
+    uint16_t crcCalc = crc16(response, 6);
+
+    uint16_t crcRecv =
+        response[6] |
+        (response[7] << 8);
+
+    if (crcCalc != crcRecv)
+    {
+        MODBUS_LOG_ERROR("MODBUS", "WRITE COIL CRC FAIL");
+        return false;
+    }
+
+    return true;
+}
+template <class Modbus>
+bool CKC_ModbusESP32<Modbus>::writeMultiCoil(uint8_t slave, uint16_t coil, uint16_t num, bool *value)
+{
+    if (num == 0 || num > 1968)
+    {
+        return false;
+    }
+
+    uint8_t frame[256];
+
+    frame[0] = slave;
+    frame[1] = 0x0F; // 0x15
+
+    frame[2] = coil >> 8;
+    frame[3] = coil & 0xFF;
+
+    frame[4] = num >> 8;
+    frame[5] = num & 0xFF;
+
+    uint8_t byteCount = (num + 7) / 8;
+
+    frame[6] = byteCount;
+
+    memset(&frame[7], 0, byteCount);
+
+    for (uint16_t i = 0; i < num; i++)
+    {
+        if (value[i])
+        {
+            frame[7 + (i / 8)] |= (1 << (i % 8));
+        }
+    }
+
+    uint16_t crc =
+        crc16(frame,
+              7 + byteCount);
+
+    frame[7 + byteCount] = crc & 0xFF;
+    frame[8 + byteCount] = crc >> 8;
+
+    int frameLen = 9 + byteCount;
+
+    MODBUS_CHECK_DEBUG("MODBUS", "TX: ");
+    printHex(frame, frameLen);
+
+    sendBytes(frame, frameLen);
+
+    uint8_t response[8];
+
+    int len = readBytes(response, 8);
+
+    if (len != 8)
+    {
+        MODBUS_LOG_ERROR("MODBUS", "WRITE MULTI COIL FAIL");
+        return false;
+    }
+
+    uint16_t crcCalc =
+        crc16(response, 6);
+
+    uint16_t crcRecv =
+        response[6] |
+        (response[7] << 8);
+
+    if (crcCalc != crcRecv)
+    {
+        MODBUS_LOG_ERROR("MODBUS", "WRITE MULTI COIL CRC FAIL");
+        return false;
+    }
+
+    return true;
+}
+
+// =========================================================
+// READ COIL (FC01)
+// =========================================================
+template <class Modbus>
+int CKC_ModbusESP32<Modbus>::readCoils(uint8_t slave, uint16_t coil, uint16_t num, bool *value)
+{
+    uint8_t frame[8];
+
+    buildFrame(slave,
+               0x01,
+               coil,
+               num,
+               frame);
+
+    MODBUS_CHECK_DEBUG("MODBUS", "TX: ");
+    printHex(frame, 8);
+
+    sendBytes(frame, 8);
+
+    uint8_t response[256];
+
+    int byteCount =
+        (num + 7) / 8;
+
+    int expected =
+        5 + byteCount;
+
+    int len =
+        readBytes(response,
+                  expected);
+
+    if (len < expected)
+    {
+        MODBUS_LOG_ERROR("MODBUS", "READ COIL FAIL");
+        return -1;
+    }
+
+    uint16_t crcCalc =
+        crc16(response,
+              expected - 2);
+
+    uint16_t crcRecv =
+        response[expected - 2] |
+        (response[expected - 1] << 8);
+
+    if (crcCalc != crcRecv)
+    {
+        MODBUS_LOG_ERROR("MODBUS", "READ COIL CRC FAIL");
+        return -2;
+    }
+
+    for (uint16_t i = 0; i < num; i++)
+    {
+        value[i] =
+            (response[3 + (i / 8)] >>
+             (i % 8)) &
+            0x01;
+
+        MODBUS_LOG_DEBUG("MODBUS",
+                         "COIL[%d] = %d",
+                         coil + i,
+                         value[i]);
+    }
+
+    return num;
+}
+
+// =========================================================
+// TRANSPLATE REGISTER
+// =========================================================
+template <class Modbus>
+float CKC_ModbusESP32<Modbus>::RegToFloat(uint16_t reg1, uint16_t reg2)
+{
+    union
+    {
+        uint32_t u32;
+        float f;
+    } data;
+
+    data.u32 =
+        ((uint32_t)reg2 << 16) |
+        reg1;
+    return data.f;
 }
 
 CKC_ModbusESP32<int> CKCModbus;

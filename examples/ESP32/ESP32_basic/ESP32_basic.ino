@@ -44,31 +44,20 @@ const char *PASS = "CKC2026";
 const char *USER_SERVER = "xxxxxxxxxx@caothang.edu.vn";
 const char *PASS_SERVER = "xxxxxxxxxxxxxx";
 
-
 // Include thư viện chính
 #include <CKC.h>
-
-// Biến lưu thời gian để gửi dữ liệu định kỳ
-int32_t time_P = 0;
 
 /*
 ==========================================================
   SETUP
 ==========================================================
 */
-
 void setup()
 {
   Serial.begin(115200);     // Khởi tạo Serial
-  pinMode(26, OUTPUT);      // LED báo trạng thái
-
   // Kết nối WiFi + Server CKC
   CKC.begin(SSID, PASS,USER_SERVER,PASS_SERVER);  
-
-  // Khai báo các key telemetry sẽ gửi lên server
-  CKC.setTelemetry("TEM","HUM",NULL);
 }
-
 /*
 ==========================================================
   LOOP
@@ -77,14 +66,5 @@ void setup()
 void loop()
 {
   // Hàm chạy chính của thư viện (bắt buộc)
-  CKC.run();    
-
-  // Gửi dữ liệu mỗi 1 giây
-  if (millis() - time_P > 1000)
-  {
-    time_P = millis();
-
-    // Gửi dữ liệu nhiệt độ lên server
-    CKC.writeTelemetry("TEM", 30);
-  }
+  CKC.run(); 
 }
