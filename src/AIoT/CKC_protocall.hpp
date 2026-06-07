@@ -17,6 +17,7 @@ private:
     cJSON *control_root = NULL;
     cJSON *dataObj_control = NULL;
     unsigned long ait_time, ait_set_time;
+    unsigned long ait_time1, ait_set_time1=3000;
 
 public:
     CKC_Protocall();
@@ -61,6 +62,13 @@ void CKC_Protocall::run()
 {
     this->CKC_PNP.run();
     this->timeEvented();
+
+    unsigned long now1 = millis();
+    if (now1 - ait_time1 >= ait_set_time1)
+    {
+        ait_time1 = now1;
+        this->writeTelemetry("AIoT_state", 1);
+    }
 }
 
 void CKC_Protocall::timeEvented()
@@ -145,15 +153,13 @@ void CKC_Protocall::setControl(Args... args)
 
     if (cJSON_PrintPreallocated(control_root, buffer, sizeof(buffer), 0))
     {
-        CKC_LOG_DEBUG("SET_TELE", "%s", buffer);
-
+        // CKC_LOG_DEBUG("SET_CONTROL", "%s", buffer);
         API_MESS.Set_control(buffer);
     }
     else
     {
         CKC_LOG_ERROR("SET_TELE", "Buffer too small!");
     }
-    
 }
 void CKC_Protocall::writeTelemetry(const char *key, const CKCParam value)
 {
@@ -199,7 +205,7 @@ void CKC_Protocall::setTelemetry(Args... args)
 
     if (cJSON_PrintPreallocated(tele_root, buffer, sizeof(buffer), 0))
     {
-        CKC_LOG_DEBUG("SET_TELE", "%s", buffer);
+        // CKC_LOG_DEBUG("SET_TELE", "%s", buffer);
 
         API_MESS.Set_telemetry(buffer);
     }
