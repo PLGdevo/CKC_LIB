@@ -1,24 +1,23 @@
 #ifndef INC_CKC_DEBUG
 #define INC_CKC_DEBUG
 
-
 #if defined(CKC_DEBUG_COLOR)
 #if defined(ARDUINO) && defined(ESP32) || defined(ESP8266)
 // ======================================================
 //                        COLOR
 // ======================================================
 
-#define LOG_BLACK      "\033[30m"
-#define LOG_RED        "\033[31m"
-#define LOG_GREEN      "\033[32m"
-#define LOG_YELLOW     "\033[33m"
-#define LOG_BLUE       "\033[34m"
-#define LOG_MAGENTA    "\033[35m"
-#define LOG_CYAN       "\033[36m"
-#define LOG_WHITE      "\033[37m"
+#define LOG_BLACK "\033[30m"
+#define LOG_RED "\033[31m"
+#define LOG_GREEN "\033[32m"
+#define LOG_YELLOW "\033[33m"
+#define LOG_BLUE "\033[34m"
+#define LOG_MAGENTA "\033[35m"
+#define LOG_CYAN "\033[36m"
+#define LOG_WHITE "\033[37m"
 
-#define LOG_BOLD       "\033[1m"
-#define LOG_RESET      "\033[0m"
+#define LOG_BOLD "\033[1m"
+#define LOG_RESET "\033[0m"
 
 // ======================================================
 //                  FILE NAME EXTRACT
@@ -54,28 +53,26 @@ static inline const char *CKCFileName(const char *path)
 //                    LOG SYSTEM
 // ======================================================
 
-#define LOG_BASE(headColor, msgColor, level, tag, format, ...)                 \
-    do                                                                          \
-    {                                                                           \
-        Serial.printf(                                                          \
-            headColor LOG_BOLD                                                  \
-            "[%10lu ms]"                                                        \
-            "[CORE %d]"                                                         \
-            "[%s]"                                                              \
-            "[%s:%d]"                                                           \
-            " %s()"                                                             \
-            "[%s]: "                                                            \
-            msgColor                                                            \
-            format                                                              \
-            LOG_RESET "\n",                                                     \
-            millis(),                                                           \
-            CKC_CORE_ID,                                                        \
-            level,                                                              \
-            CKCFileName(__FILE__),                                              \
-            __LINE__,                                                           \
-            __FUNCTION__,                                                       \
-            tag,                                                                \
-            ##__VA_ARGS__);                                                     \
+#define LOG_BASE(headColor, msgColor, level, tag, format, ...) \
+    do                                                         \
+    {                                                          \
+        Serial.printf(                                         \
+            headColor LOG_BOLD                                 \
+            "[%10lu ms]"                                       \
+            "[CORE %d]"                                        \
+            "[%s]"                                             \
+            "[%s:%d]"                                          \
+            " %s()"                                            \
+            "[%s]: " msgColor                                  \
+                format LOG_RESET "\n",                         \
+            millis(),                                          \
+            CKC_CORE_ID,                                       \
+            level,                                             \
+            CKCFileName(__FILE__),                             \
+            __LINE__,                                          \
+            __FUNCTION__,                                      \
+            tag,                                               \
+            ##__VA_ARGS__);                                    \
     } while (0)
 
 // ======================================================
@@ -144,12 +141,39 @@ static inline const char *CKCFileName(const char *path)
 #define CKC_LOG_DEBUG(tag, format, ...) LOG_BASE("DEBUG", tag, format, ##__VA_ARGS__)
 #define CKC_LOG_WARN(tag, format, ...) LOG_BASE("WARNING", tag, format, ##__VA_ARGS__)
 
+// ======================================================
+//                    SPECIAL LOG
+// ======================================================
+
+#define CKC_LOG_WIFI(tag, format, ...) \
+    LOG_BASE("📶 WIFI", tag, format, ##__VA_ARGS__)
+
+#define CKC_LOG_MQTT(tag, format, ...) \
+    LOG_BASE("📡 MQTT", tag, format, ##__VA_ARGS__)
+
+#define CKC_LOG_UART(tag, format, ...) \
+    LOG_BASE("🛰 UART", tag, format, ##__VA_ARGS__)
+
+#define CKC_LOG_OK(tag, format, ...) \
+    LOG_BASE("✅ OK", tag, format, ##__VA_ARGS__)
+
+#define CKC_LOG_FAIL(tag, format, ...) \
+    LOG_BASE("❌ FAIL", tag, format, ##__VA_ARGS__)
+
 #else
 
 #define CKC_LOG_ERROR(tag, format, ...)
 #define CKC_LOG_INFO(tag, format, ...)
 #define CKC_LOG_DEBUG(tag, format, ...)
 #define CKC_LOG_WARN(tag, format, ...)
+
+#define CKC_LOG_WIFI(tag, format, ...)
+#define CKC_LOG_MQTT(tag, format, ...)
+#define CKC_LOG_UART(tag, format, ...)
+
+#define CKC_LOG_OK(tag, format, ...)
+#define CKC_LOG_FAIL(tag, format, ...)
+
 #endif
 static inline const char *CKCFileName(const char *path)
 {

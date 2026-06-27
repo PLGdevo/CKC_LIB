@@ -10,6 +10,7 @@ Topic format:
 /* Subscribe topic */
 #define CKC_SUB_PREFIX_TELEMETRY_TOPIC               "/telemetry"
 #define CKC_SUB_PREFIX_CONTROL_TOPIC                 "/control"
+#define CKC_SUB_PREFIX_STATUS_TOPIC                 "/status"
 #define CKC_SUB_PREFIX_ARDUINO_TOPIC                 "/arduino_pin/"
 #define CKC_SUB_PREFIX_VIRTUAL_TOPIC                 "/virtual_pin/"
 #define CKC_SUB_PREFIX_ASK_WIFI_TOPIC                "/wifi/ask"
@@ -18,6 +19,7 @@ Topic format:
 /* Publish topic */
 #define CKC_PUB_PREFIX_TELEMETRY_TOPIC               "telemetry"
 #define CKC_PUB_PREFIX_CONTROL_TOPIC                 "control"
+#define CKC_PUB_PREFIX_STATUS_TOPIC                  "status"
 #define CKC_PUB_PREFIX_MODBUS_DATA_TOPIC             "/data/"
 
 

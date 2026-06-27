@@ -95,8 +95,10 @@ public:
     void virtualWrite(uint16_t pin, const CKCParam &param);
     void Set_telemetry(const char *telemetry);
     void Set_control(const char *control);
+    void Set_status(const char *Status);
     const char *WriteControl(const char *key, const CKCParam value);
     const char *WriteTelemetry(const char *key, const CKCParam value);
+    const char *WriteStatus(const char *key, const CKCParam value);
 
 private:
     int Pin;
@@ -105,6 +107,7 @@ private:
     uint8_t V_pin;
     cJSON *telemetry_root = NULL;
     cJSON *control_root = NULL;
+    cJSON *status_root = NULL;
 
 #define CKC_API_SUB_PREFIX_CONTROL_TOPIC "control"
 #ifdef CKC_100_PINS
@@ -118,7 +121,7 @@ private:
 
 void CkC_APi::handleMessage(const char *topic, const char *payload)
 {
-    CKC_LOG_DEBUG("MQTT->API", "Topic %s | %s", topic, payload);
+    CKC_LOG_DEBUG("MQTT->API", "Server_Request %s", payload);
     if (strncmp(topic, CKC_BASE_TOPIC, strlen(CKC_BASE_TOPIC)) != 0)
         return;
     String topicStr = topic;
@@ -140,7 +143,7 @@ void CkC_APi::handler_control(const char *payload)
     cJSON *root = cJSON_Parse(payload);
     if (root == NULL)
     {
-        CKC_LOG_DEBUG("ERR", "JSON parse failed!\n");
+        CKC_LOG_ERROR("ERR", "JSON parse failed!\n");
         return;
     }
 
@@ -311,7 +314,7 @@ void CkC_APi::handlerVirtual_Pin(const char *payload)
     cJSON *root = cJSON_Parse(payload);
     if (root == NULL)
     {
-        CKC_LOG_DEBUG("ERR", "JSON parse failed!\n");
+        CKC_LOG_ERROR("ERR", "JSON parse failed!\n");
         return;
     }
 
@@ -338,7 +341,7 @@ void CkC_APi::handlerVirtual_Pin(const char *payload)
     }
     else
     {
-        CKC_LOG_DEBUG("ERR", "Invalid pin V%d", V_pin);
+        CKC_LOG_ERROR("ERR", "Invalid pin V%d", V_pin);
     }
     cJSON_Delete(root);
 }
@@ -348,7 +351,7 @@ void CkC_APi::dowm(const char *payload)
     cJSON *root = cJSON_Parse(payload);
     if (root == NULL)
     {
-        CKC_LOG_DEBUG("ERR", "JSON parse failed!\n");
+        CKC_LOG_ERROR("ERR", "JSON parse failed!\n");
         return;
     }
 
@@ -395,6 +398,7 @@ void CkC_APi::dowm(const char *payload)
 
     cJSON_Delete(root);
 }
+
 void CkC_APi::Set_telemetry(const char *telemetry)
 {
     if (telemetry_root != NULL)
@@ -425,6 +429,24 @@ void CkC_APi::Set_control(const char *control)
     char *jsonStr = cJSON_PrintUnformatted(control_root);
     CKC_LOG_DEBUG("SET_CONTROL", "%s", jsonStr);
     if (control_root == NULL)
+    {
+        CKC_LOG_ERROR("API", "Parse failed");
+        return;
+    }
+}
+
+void CkC_APi::Set_status(const char *Status)
+{
+    if (status_root != NULL)
+    {
+        cJSON_Delete(control_root);
+        control_root = NULL;
+    }
+
+    status_root = cJSON_Parse(Status);
+    char *jsonStr = cJSON_PrintUnformatted(status_root);
+    // CKC_LOG_DEBUG("SET_CONTROL", "%s", jsonStr);
+    if (status_root == NULL)
     {
         CKC_LOG_ERROR("API", "Parse failed");
         return;
@@ -491,7 +513,7 @@ const char *CkC_APi::WriteControl(const char *key, const CKCParam value)
 
     if (cJSON_PrintPreallocated(control_root, buffer, sizeof(buffer), 0))
     {
-        CKC_LOG_DEBUG("CONTROL", "%s", buffer);
+        // CKC_LOG_DEBUG("CONTROL", "%s", buffer);
         return buffer;
     }
     else
@@ -561,12 +583,82 @@ const char *CkC_APi::WriteTelemetry(const char *key, const CKCParam value)
 
     if (cJSON_PrintPreallocated(telemetry_root, buffer, sizeof(buffer), 0))
     {
-        CKC_LOG_DEBUG("TELEMETRY", "%s", buffer);
+        // CKC_LOG_DEBUG("TELEMETRY", "%s", buffer);
         return buffer;
     }
     else
     {
         CKC_LOG_DEBUG("TELEMETRY", "Buffer too small!");
+        return nullptr;
+    }
+}
+
+const char *CkC_APi::WriteStatus(const char *key, const CKCParam value)
+{
+    if (!status_root)
+        return nullptr;
+
+    cJSON *ObjectData = cJSON_GetObjectItem(status_root, "data");
+    if (!ObjectData)
+        return nullptr;
+
+    cJSON *newItem = NULL;
+
+    switch (value.getType())
+    {
+    case CKCParam::Type::INT:
+        newItem = cJSON_CreateNumber(value.getInt());
+        break;
+
+    case CKCParam::Type::FLOAT:
+    {
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%.2f", value.getFloat());
+        newItem = cJSON_CreateRaw(buf); // giữ dạng number
+        break;
+    }
+
+    case CKCParam::Type::DOUBLE:
+    {
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%.2f", value.getDouble());
+        newItem = cJSON_CreateRaw(buf); // giữ dạng number
+        break;
+    }
+
+    case CKCParam::Type::BOOL:
+        newItem = cJSON_CreateBool(value.getBool());
+        break;
+
+    case CKCParam::Type::STRING:
+        newItem = cJSON_CreateString(value.getString().c_str());
+        break;
+
+    default:
+        return nullptr;
+    }
+
+    if (!newItem)
+        return nullptr;
+
+    cJSON *existing = cJSON_GetObjectItem(ObjectData, key);
+
+    if (existing)
+        cJSON_ReplaceItemInObject(ObjectData, key, newItem);
+    else
+        cJSON_AddItemToObject(ObjectData, key, newItem);
+
+    // ✅ STATIC BUFFER
+    static char buffer[256];
+
+    if (cJSON_PrintPreallocated(status_root, buffer, sizeof(buffer), 0))
+    {
+        // CKC_LOG_DEBUG("STATUS", "%s", buffer);
+        return buffer;
+    }
+    else
+    {
+        CKC_LOG_DEBUG("STATUS", "Buffer too small!");
         return nullptr;
     }
 }

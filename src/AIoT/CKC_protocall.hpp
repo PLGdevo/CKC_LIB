@@ -6,6 +6,16 @@
 #include <Modbus/modbus.h>
 // #include <Modbus/CKC_modbus.h>
 
+#define MAX_TIMER_EVENT 10
+
+struct TimerEvent
+{
+    unsigned long interval;
+    unsigned long previousMillis;
+    void (*callback)();
+    bool enable;
+};
+
 class CKC_Protocall
 {
 private:
@@ -16,7 +26,10 @@ private:
     cJSON *dataObj_tele = NULL;
     cJSON *control_root = NULL;
     cJSON *dataObj_control = NULL;
-    unsigned long ait_time, ait_set_time;
+    cJSON *status_root =NULL;
+    cJSON *dataObj_status=NULL;
+    // unsigned long ait_time, ait_set_time;
+    TimerEvent timerList[MAX_TIMER_EVENT];
     unsigned long ait_time1, ait_set_time1=3000;
 
 public:
@@ -30,8 +43,11 @@ public:
     void setTelemetry(Args... args);
     template <typename... Args>
     void setControl(Args... args);
+    template <typename... Args>
+    void setStatus(Args... args);
     void writeControl(const char *key, const CKCParam value);
     void writeTelemetry(const char *key, const CKCParam value);
+    void writeStatus(const char *key, const CKCParam value);
     int addTimeEvent(unsigned long time, void (*callback)());
     void timeEvented();
     void (*_timerCallback)() = NULL;
@@ -49,6 +65,8 @@ void CKC_Protocall::begin(const char *sta_ssid, const char *sta_pass)
 {
     this->CKC_PNP.init(sta_ssid, sta_pass);
     this->setTelemetry();
+    this->setStatus();
+    this->setControl();
 }
 
 void CKC_Protocall::begin(const char *sta_ssid, const char *sta_pass, const char *mqtt_userName, const char *mqtt_pass)
@@ -56,6 +74,7 @@ void CKC_Protocall::begin(const char *sta_ssid, const char *sta_pass, const char
     this->CKC_PNP.init(sta_ssid, sta_pass, mqtt_userName, mqtt_pass);
     this->setControl();
     this->setTelemetry();
+    this->setStatus();
 }
 
 void CKC_Protocall::run()
@@ -67,7 +86,7 @@ void CKC_Protocall::run()
     if (now1 - ait_time1 >= ait_set_time1)
     {
         ait_time1 = now1;
-        this->writeTelemetry("AIoT_state", 1);
+        this->writeStatus("status", "online");
     }
 }
 
@@ -75,23 +94,39 @@ void CKC_Protocall::timeEvented()
 {
     unsigned long now = millis();
 
-    if (now - ait_time >= ait_set_time)
+    for (int i = 0; i < MAX_TIMER_EVENT; i++)
     {
-        ait_time = now;
-
-        if (_timerCallback != NULL)
+        if (timerList[i].enable)
         {
-            _timerCallback();
+            if (now - timerList[i].previousMillis >= timerList[i].interval)
+            {
+                timerList[i].previousMillis = now;
+
+                if (timerList[i].callback != NULL)
+                {
+                    timerList[i].callback();
+                }
+            }
         }
     }
 }
 
 int CKC_Protocall::addTimeEvent(unsigned long time, void (*callback)())
 {
-    ait_set_time = time;
-    ait_time = millis();
-    _timerCallback = callback;
-    return 1;
+    for (int i = 0; i < MAX_TIMER_EVENT; i++)
+    {
+        if (!timerList[i].enable)
+        {
+            timerList[i].interval = time;
+            timerList[i].previousMillis = millis();
+            timerList[i].callback = callback;
+            timerList[i].enable = true;
+
+            return i; // trả về ID
+        }
+    }
+
+    return -1; // đầy
 }
 
 bool CKC_Protocall::connected()
@@ -114,6 +149,7 @@ void CKC_Protocall::writeControl(const char *key, const CKCParam value)
         serverMQTT.CKC_publishData_control(data_control);
     }
 }
+
 template <typename... Args>
 void CKC_Protocall::setControl(Args... args)
 {
@@ -169,6 +205,7 @@ void CKC_Protocall::writeTelemetry(const char *key, const CKCParam value)
         serverMQTT.CKC_publishData_tele(data);
     }
 }
+
 template <typename... Args>
 void CKC_Protocall::setTelemetry(Args... args)
 {
@@ -212,6 +249,61 @@ void CKC_Protocall::setTelemetry(Args... args)
     else
     {
         CKC_LOG_ERROR("SET_TELE", "Buffer too small!");
+    }
+}
+
+template <typename... Args>
+void CKC_Protocall::setStatus(Args... args)
+{
+    if (status_root == NULL)
+    {
+        status_root = cJSON_CreateObject();
+        dataObj_status = cJSON_CreateObject();
+
+        char macStr[18];
+        WiFi.macAddress().toCharArray(macStr, sizeof(macStr));
+        cJSON_AddStringToObject(status_root, "mac_address", macStr);
+        cJSON_AddItemToObject(status_root, "data", dataObj_status);
+    }
+    else
+    {
+        cJSON_DeleteItemFromObject(status_root, "data");
+        dataObj_status = cJSON_CreateObject();
+        cJSON_AddItemToObject(status_root, "data", dataObj_status);
+    }
+
+    const char *keys[] = {args...};
+
+    constexpr size_t count = sizeof...(args);
+
+    for (size_t i = 0; i < count; i++)
+    {
+        if (keys[i] == nullptr)
+            continue;
+
+        cJSON_AddNumberToObject(dataObj_status, keys[i], 0);
+    }
+
+    char buffer[256];
+
+    if (cJSON_PrintPreallocated(status_root, buffer, sizeof(buffer), 0))
+    {
+        CKC_LOG_DEBUG("SET_STATUS", "%s", buffer);
+
+        API_MESS.Set_status(buffer);
+    }
+    else
+    {
+        CKC_LOG_ERROR("SET_STATUS", "Buffer too small!");
+    }
+}
+
+void CKC_Protocall::writeStatus(const char *key, const CKCParam value)
+{
+    if (this->CKC_PNP.CkC_Connected() && this->serverMQTT._connect())
+    {
+        const char *dataObj_status = this->API_MESS.WriteStatus(key, value);
+        serverMQTT.CKC_publishData_control(dataObj_status);
     }
 }
 
