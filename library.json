@@ -1,6 +1,6 @@
 {
   "name": "CKC",
-  "version": "1.3.5",
+  "version": "1.3.6",
   "description": "It supports WiFi, Ethernet, Zigbee, Modbus, Serial. Works with boards like Arduino, ESP8266, ESP32, STM32, Raspberry Pi...",
   "keywords": "esp8266, esp32,iot, wifi, ethernet,AIoT,CKC,AIot lib,CKC lib",
   "authors":
