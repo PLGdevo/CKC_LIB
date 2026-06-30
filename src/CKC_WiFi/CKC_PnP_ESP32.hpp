@@ -425,6 +425,11 @@ inline void CKC_PnP<Transport>::CKC_SendPage()
     webServer.send(200, "text/html", "");
     webServer.sendContent_P(CKC_WebUI::WebConfigHEAD);
 
+    // String foot = FPSTR(CKC_WebUI::WebConfigHEAD);    
+
+    // foot.replace("%MQTT_USER%", _mqtt_username);
+    // foot.replace("%MQTT_PASS%", _mqtt_pass);
+
     for (int i = 0; i < Scan_WiFi_MAX; i++)
     {
         if (scan_ssid[i] != "")
@@ -437,7 +442,7 @@ inline void CKC_PnP<Transport>::CKC_SendPage()
         }
     }
     // webServer.sendContent_P(CKC_WebUI::WebConfigFOOT);
-    String foot = FPSTR(CKC_WebUI::WebConfigFOOT);
+    String foot = FPSTR(CKC_WebUI::WebConfigFOOT);    
 
     foot.replace("%MQTT_USER%", _mqtt_username);
     foot.replace("%MQTT_PASS%", _mqtt_pass);
@@ -643,6 +648,7 @@ inline void CKC_PnP<Transport>::CKC_state_Connect_AP()
         WiFi.disconnect();
         isconnecting = false;
         this->handleScan();
+        
         this -> CKC_SendPage(); });
 
     webServer.on("/connect", HTTP_POST, [this]()

@@ -93,7 +93,7 @@ const char CKC_WebUI::WebConfigHEAD[] PROGMEM = R"rawliteral(
         hr {
             border: none;
             border-top: 1px solid var(--border);
-            margin: 25px 0;
+            margin: 10px 0;
         }
 
         .select-wrap {
@@ -167,8 +167,63 @@ const char CKC_WebUI::WebConfigHEAD[] PROGMEM = R"rawliteral(
             opacity: 0.7;
         }
 
+        .dropdown{
+            margin-top:15px;
+            max-height:180px;
+            overflow-y:auto;
+            border:1px solid #e0e6ed;
+            border-radius:10px;
+            background:#fff;
+        }
+
+        .dropdown .title{
+            padding:14px 16px;
+            font-size:18px;
+            font-weight:bold;
+            border-bottom:1px solid #eee;
+        }
+
+        .option{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:14px 16px;
+            cursor:pointer;
+            border-bottom:1px solid #eee;
+            transition:.2s;
+        }
+
+        .option:last-child{
+            border-bottom:none;
+        }
+
+        .option:hover{
+            background:#f5f7f9;
+        }
+
+        .signal{
+            display:flex;
+            gap:2px;
+            align-items:flex-end;
+        }
+
+        .bar{
+            width:4px;
+            background:#d0d7de;
+            border-radius:2px;
+        }
+
+        .bar:nth-child(1){height:6px;}
+        .bar:nth-child(2){height:9px;}
+        .bar:nth-child(3){height:12px;}
+        .bar:nth-child(4){height:15px;}
+
+        .bar.active{
+            background:#4CAF93;
+        }
+
         .toggle-eye:hover {
-            opacity: 1;
+            opacity: 1;}
     </style>
 </head>
 
@@ -185,17 +240,12 @@ const char CKC_WebUI::WebConfigHEAD[] PROGMEM = R"rawliteral(
                 <label>SSID</label>
 
                 <div class="select-wrap">
-
-                    <select id="wifiSelect" name="ssid">
-)rawliteral";
-
-// =====================================================
-// HTML FOOT
-// =====================================================
-const char CKC_WebUI::WebConfigFOOT[] PROGMEM = R"rawliteral(
-                    </select>
-
-                    <div id="signalView"></div>
+                <input
+                type="text"
+                id="wifiSelect"
+                name="ssid"
+                placeholder="Select WiFi"
+                />                
 
                 </div>
 
@@ -213,63 +263,72 @@ const char CKC_WebUI::WebConfigFOOT[] PROGMEM = R"rawliteral(
 
                 <label>MQTT Username</label>
 
-                <input type="text" name="mqtt_user" placeholder="Enter MQTT username">
+                <input
+                    type="text"
+                    id="mqttUser"
+                    name="mqtt_user"
+                    placeholder="Enter MQTT username">
 
                 <label>MQTT Password</label>
 
                 <div class="password-box">
-
-                    <input type="password" id="mqttPass" name="mqtt_pass" placeholder="Enter MQTT password">
+                    <input
+                            type="password"
+                            id="mqttPass"
+                            name="mqtt_pass"
+                            placeholder="Enter MQTT password">
 
                     <span class="toggle-eye" onclick="togglePassword('mqttPass', this)">
-                        👁
+                    👁
                     </span>
-
                 </div>
 
-                <input type="submit" value="CONNECT">
-
-            </form>
-
-            <hr>
-
-            <form action="/scan" method="GET">
-
-                <button type="submit">
-                    RELOAD WIFI
-                </button>
+                <input type="submit" value="CONNECT" />
 
             </form>
 
         </div>
 
-    </div>
+            <hr> 
+                <div class="card">
 
+                    <form action="/scan" method="GET">
+                        <button type="submit">
+                            RELOAD WIFI
+                        </button>
+                    </form>
+
+                    <div class="dropdown" id="wifiList">
+
+                        <div class="title">
+                            Scan Wi-Fi
+                        </div>
+)rawliteral";
+// =====================================================
+// HTML FOOT
+// =====================================================
+const char CKC_WebUI::WebConfigFOOT[] PROGMEM = R"rawliteral(
+                       </div>      <!-- dropdown -->
+                </div>      <!-- card -->
+    </div>      <!-- container --> 
     <script>
 
+        const CONFIG = {
+                            mqttUser: "%MQTT_USER%",
+                            mqttPass: "%MQTT_PASS%"
+                        };
+
+        document.getElementById("mqttUser").value = CONFIG.mqttUser;
+        document.getElementById("mqttPass").value = CONFIG.mqttPass;
+
+
         const select = document.getElementById("wifiSelect");
-        const signalView = document.getElementById("signalView");
+        
 
-        function renderSignal(level) {
-            let html =
-                '<div class="signal level-' + level + '">';
-
-            for (let i = 0; i < 4; i++) {
-                html += '<span class="bar active"></span>';
-            }
-
-            html += '</div>';
-
-            signalView.innerHTML = html;
-        }
-
-        select.addEventListener("change", function () {
-            let level =
-                this.options[this.selectedIndex]
-                    .getAttribute("data-level");
-
-            renderSignal(level);
-        });
+        function selectWifi(name)
+        {
+            document.getElementById("wifiSelect").value = name;
+        }        
 
         window.onload = function () {
             if (select.options.length > 0) {
@@ -599,16 +658,46 @@ String CKC_WebUI::buildWiFiOption(const String &ssid, int rssi)
 {
     int level = getSignalLevel(rssi);
 
-    String option = "<option value='";
-    option += ssid;
-    option += "' data-level='";
-    option += String(level);
-    option += "'>";
-    option += ssid;
-    option += " (";
-    option += String(rssi);
-    option += " dBm)</option>";
-    return option;
+    String color;
+
+    switch(level)
+    {
+        case 4: color = "#4CAF50"; break;   // Xanh lá
+        case 3: color = "#FFC107"; break;   // Vàng
+        case 2: color = "#FF9800"; break;   // Cam
+        default: color = "#F44336"; break;  // Đỏ
+    }
+
+    String html;
+
+    html += "<div class='option' onclick=\"selectWifi('";
+    html += ssid;
+    html += "')\">";
+
+    html += "<span>";
+    html += ssid;
+    html += "</span>";
+
+    html += "<div class='signal'>";
+
+    for (int i = 1; i <= 4; i++)
+    {
+        if (i <= level)
+        {
+            html += "<span class='bar active' style='background:";
+            html += color;
+            html += "'></span>";
+        }
+        else
+        {
+            html += "<span class='bar'></span>";
+        }
+    }
+
+    html += "</div>";
+    html += "</div>";
+
+    return html;
 }
 
 #endif
