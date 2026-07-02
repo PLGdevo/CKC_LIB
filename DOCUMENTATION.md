@@ -46,11 +46,11 @@ Thư viện được tổ chức theo các module chính sau:
 
 ### Arduino IDE
 
-1. Mở Arduino IDE.
-2. Chọn Sketch → Include Library → Manage Libraries...
-3. Tìm kiếm CKC hoặc AIoT CKC.
-4. Chọn thư viện CKC IoT.
-5. Nhấn Install để cài đặt.
+1. Mở **Arduino IDE**.
+2. Chọn **Sketch** → **Include Library** → **Manage Libraries..**.
+3. Tìm kiếm **CKC** hoặc **AIoT CKC**.
+4. Chọn thư viện **CKC AIoT**.
+5. Nhấn **Install** để cài đặt.
 
 ### PlatformIO
 
@@ -309,9 +309,9 @@ void loop() {
 
 Khi muốn cấu hình WiFi:
 1. Nhấn nút trên thiết bị (GPIO tương ứng).
-2. Thiết bị tạo ra AP WiFi với tên `CKC_Config_XXXXXX`.
+2. Thiết bị tạo ra AP WiFi với tên `CKC:XXXXXX` mật khẩu: `CKC@2026`.
 3. Kết nối đến AP này.
-4. Mở trình duyệt, truy cập `192.168.4.1`.
+4. Mở trình duyệt, truy cập `192.168.6.1`.
 5. Nhập SSID và mật khẩu WiFi mới.
 6. Thiết bị sẽ kết nối lại với WiFi mới.
 
