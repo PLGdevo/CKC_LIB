@@ -1,8 +1,9 @@
 #ifndef INC_CKC_DEBUG
 #define INC_CKC_DEBUG
 
-#if defined(CKC_DEBUG_COLOR)
 #if defined(ARDUINO) && defined(ESP32) || defined(ESP8266)
+#if defined(CKC_DEBUG_COLOR)
+
 // ======================================================
 //                        COLOR
 // ======================================================
@@ -126,8 +127,6 @@ static inline const char *CKCFileName(const char *path)
 
 #endif
 
-#endif
-
 #if defined(CKC_DEBUG)
 #if defined(ARDUINO) && defined(ESP32) || defined(ESP8266)
 
@@ -188,8 +187,9 @@ static inline const char *CKCFileName(const char *path)
     }
     return file;
 }
-#endif
 
+#endif
+#endif
 #define MODBUS_DEBUG
 #if defined(ARDUINO) && defined(ESP32) || defined(ESP8266)
 #if defined(MODBUS_DEBUG)
