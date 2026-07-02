@@ -123,7 +123,6 @@ Khởi tạo hệ thống kết nối.
 Cú pháp:
 
 ```cpp
-CKC.begin(const char *sta_ssid, const char *sta_pass);
 CKC.begin(const char *sta_ssid, const char *sta_pass, const char *mqtt_userName, const char *mqtt_pass);
 ```
 
@@ -184,22 +183,13 @@ Gửi dữ liệu điều khiển hoặc phản hồi điều khiển.
 CKC.writeControl("LED", 1);
 ```
 
-### 5.7 CKC.writeStatus()
-
-Gửi trạng thái thiết bị.
-
-```cpp
-CKC.writeStatus("status", "online");
-```
-
-### 5.8 setTelemetry(), setControl(), setStatus()
+### 5.7 setTelemetry(), setControl(), setStatus()
 
 Dùng để khai báo cấu trúc dữ liệu trước khi gửi.
 
 ```cpp
 CKC.setTelemetry("TEM", "HUM");
 CKC.setControl("LED", "RELAY");
-CKC.setStatus("status");
 ```
 
 ---
