@@ -303,7 +303,7 @@ void CKC_Protocall::writeStatus(const char *key, const CKCParam value)
     if (this->CKC_PNP.CkC_Connected() && this->serverMQTT._connect())
     {
         const char *dataObj_status = this->API_MESS.WriteStatus(key, value);
-        serverMQTT.CKC_publishData_control(dataObj_status);
+        serverMQTT.CKC_publishData_status(dataObj_status);
     }
 }
 
