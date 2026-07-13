@@ -34,28 +34,35 @@
     READ HOLDING REGISTER (FC03)
     =========================================================
     int readHoldingRegisterValue(uint8_t slave, uint16_t reg, uint16_t num, uint16_t *values);
+                                (địa chỉ Slave,thanh ghi bắt đầu, số lượng thanh ghi, mảng lưu giá trị)
 
     =========================================================
     READ INPUT REGISTER (FC04)
     =========================================================
     int readInputRegistersValue(uint8_t slave, uint16_t reg, uint16_t num, uint16_t *values);
+                                (địa chỉ Slave,thanh ghi bắt đầu, số lượng thanh ghi, mảng lưu giá trị)
 
     =========================================================
     WRITE REGISTER (FC06) && (FC16)
     =========================================================
     bool writeSingleRegister(uint8_t slave, uint16_t reg, uint16_t value);
+                            (địa chỉ slave,thanh ghi ,giá trị)
     bool writeMultiRegister(uint8_t slave, uint16_t reg, uint16_t num, uint16_t *value);
+                            (địa chỉ Slave,thanh ghi bắt đầu, số lượng thanh ghi, giá trị)
 
     =========================================================
     WRITE COIL (FC05) && (FC15)
     =========================================================
     bool writeSingleCoil(uint8_t slave, uint16_t coil, bool value);
+                        (địa chỉ slave,thanh ghi ,giá trị)
     bool writeMultiCoil(uint8_t slave, uint16_t coil, uint16_t num, bool *value);
+                        (địa chỉ Slave,thanh ghi bắt đầu, số lượng thanh ghi, giá trị)
 
     =========================================================
     READ COIL (FC01)
     =========================================================
     int readCoils(uint8_t slave, uint16_t coil, uint16_t num, bool *value);
+                  (địa chỉ Slave,thanh ghi bắt đầu, số lượng thanh ghi, mảng lưu giá trị)  
 
     =========================================================
     TRANSPLATE REGISTER (dữ liệu int_16 không dấu)
