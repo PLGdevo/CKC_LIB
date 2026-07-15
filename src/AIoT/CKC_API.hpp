@@ -50,12 +50,16 @@
 #define INC_CKC_API_HPP_
 
 #include <HTTPClient.h>
+#include <stdarg.h>
 #include <AIoT/CKC_topic.h>
 #include "UIlty/cJSON.hpp"
 #include <AIoT/CKC_Param.hpp>
 #include <AIoT/CKC_handler.hpp>
+#include <MQTT/NPT_Client/NTPClient.h>
+#include <MQTT/PubSubClient/PubSubClient.h>
 
-#include <stdarg.h>
+WiFiClientSecure server1;
+PubSubClient mqttClient1(server1);
 
 CKC_DataHandler PLGtech;
 
@@ -96,6 +100,7 @@ public:
     void Set_telemetry(const char *telemetry);
     void Set_control(const char *control);
     void Set_status(const char *Status);
+    void feedback_control(cJSON *uuid, cJSON *type, cJSON *data);
     const char *WriteControl(const char *key, const CKCParam value);
     const char *WriteTelemetry(const char *key, const CKCParam value);
     const char *WriteStatus(const char *key, const CKCParam value);
@@ -114,8 +119,9 @@ private:
     String CKC_uuid_list[100];
     int16_t CKC_ID_control[];
 #else
-    String CKC_uuid_list[50];
-    int16_t CKC_ID_control[50];
+    String CKC_uuid_list[20];
+    int16_t CKC_ID_control[20];
+    int16_t CKC_ID_type[20];
 #endif
 };
 
@@ -186,20 +192,70 @@ void CkC_APi::handler_control(const char *payload)
             item = item->next;
         }
     }
-    cJSON *uuid = cJSON_GetObjectItem(root, "uuid");
+      cJSON *uuid = cJSON_GetObjectItem(root, "uuid");
     if (cJSON_IsString(uuid))
     {
         CKC_uuid_list[V_pin] = uuid->valuestring;
-        // CKC_LOG_DEBUG("json sub", "uuid : %s", CKC_uuid_list[V_pin].c_str());
+        // CKC_LOG_MQTT("json sub", "uuid : %s", CKC_uuid_list[V_pin].c_str());        
+    }
+
+    cJSON *Type_id = cJSON_GetObjectItem(root, "type");
+    if (cJSON_IsNumber(Type_id))
+    {
+        CKC_ID_type[V_pin] = Type_id->valueint;
+        // CKC_LOG_MQTT("json sub", "type : %d", CKC_ID_type[V_pin]);        
     }
 
     cJSON *control_id = cJSON_GetObjectItem(root, "control_id");
     if (cJSON_IsNumber(control_id))
     {
         CKC_ID_control[V_pin] = control_id->valueint;
-        // CKC_LOG_DEBUG("json sub", "id_control : %d", CKC_ID_control[V_pin]);
+        // CKC_LOG_MQTT("json sub", "id_control : %d", CKC_ID_control[V_pin]);
     }
+
+    this->feedback_control(uuid, Type_id, data);
     cJSON_Delete(root);
+}
+
+void CkC_APi::feedback_control(cJSON *uuid, cJSON *type, cJSON *data)
+{
+    /*    Paload {"uuid":"  ","type":number, "data":{...}}        */
+    cJSON *send_feedback = cJSON_CreateObject();
+
+    if (cJSON_IsString(uuid))
+    {
+        cJSON_AddStringToObject(send_feedback, "uuid", uuid->valuestring);
+    }
+
+    if (cJSON_IsNumber(type))
+    {
+        cJSON_AddNumberToObject(send_feedback, "type", type->valueint);
+    }
+
+    char macStr[18];
+    WiFi.macAddress().toCharArray(macStr, sizeof(macStr));
+    cJSON_AddStringToObject(send_feedback, "mac_address", macStr);
+
+    if (cJSON_IsObject(data) || cJSON_IsArray(data))
+    {
+        cJSON_AddItemToObject(
+            send_feedback,
+            "data",
+            cJSON_Duplicate(data, true));
+    }
+
+    char *msg = cJSON_PrintUnformatted(send_feedback);
+
+    CKC_LOG_MQTT("FEEDBACK", "mess : %s", msg);
+
+
+    char NameTopic[100];
+    snprintf(NameTopic, sizeof(NameTopic), "%s%s", CKC_BASE_TOPIC, CKC_PUB_PREFIX_CONTROL_TOPIC);
+    CKC_LOG_MQTT("FEEDBACK", "TOPIC : %s", NameTopic);
+    mqttClient1.publish(NameTopic, msg);     
+
+    free(msg);
+    cJSON_Delete(send_feedback);
 }
 
 void CkC_APi::handlerArduino_Pin(const char *payload)
