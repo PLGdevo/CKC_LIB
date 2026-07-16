@@ -9,6 +9,8 @@
 #define DEBUG_HANDLER_COLOR
 #endif
 
+#if defined(CKC_UPDATE_OTA)
 #define OTA
+#endif
 
 #endif
