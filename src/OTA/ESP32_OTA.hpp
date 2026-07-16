@@ -1,3 +1,6 @@
+#ifndef CKC_OTA_HPP
+#define CKC_OTA_HPP
+
 #include "OTA/ESP32_OTA.h"
 
 extern const char WebOTA[] PROGMEM;
@@ -10,7 +13,7 @@ void CKC_OTA::begin(WebServer &server)
 
     _server->begin();
 
-    if (MDNS.begin("PLG_ota"))
+    if (MDNS.begin("ckc_ota"))
     {
         MDNS.addService("http", "tcp", 80);
     }
@@ -156,3 +159,5 @@ void CKC_OTA::handleUpdate()
         break;
     }
 }
+
+#endif
