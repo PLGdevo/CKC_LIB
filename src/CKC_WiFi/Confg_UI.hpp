@@ -24,126 +24,197 @@ const char CKC_WebUI::WebConfigHEAD[] PROGMEM = R"rawliteral(
 <head>
     <meta charset="UTF-8">
     <title>WiFi CONFIG</title>
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <style>
         :root {
-            --primary: #4CAF93;
-            --bg: #f5f7f9;
+            /* CHẾ ĐỘ SÁNG (MẶC ĐỊNH) */
+            --bg: #f8fafc;
             --card: #ffffff;
-            --text: #2c3e50;
-            --border: #e0e6ed;
+            --text: #0f172a;
+            --sub: #64748b;
+            --border: #e2e8f0;
+            --pri: #0ea5e9;
+            --hover: #0284c7;
+            --btn-text: #ffffff;
+            --btn-bg: rgba(14, 165, 233, 0.1);
+            --input-bg: #f1f5f9;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+            --glow-1: rgba(14, 165, 233, 0.03);
+            --glow-2: rgba(14, 165, 233, 0.01);
+            --switch-glow: rgba(14, 165, 233, 0.3);
+            --moon-glow: none;
+            --text-shadow: none;
+        }
+
+        body.dark {
+            /* CHẾ ĐỘ TỐI */
+            --bg: #090d16;
+            --card: #121824;
+            --text: #f8fafc;
+            --sub: #64748b;
+            --border: #1e293b;
+            --pri: #00d2ff;
+            --hover: #00b9e6;
+            --btn-text: #090d16;
+            --btn-bg: rgba(0, 210, 255, 0.1);
+            --input-bg: #161f30;
+            --shadow:
+              0 0 25px rgba(0, 210, 255, 0.25),
+              inset 0 0 15px rgba(0, 210, 255, 0.08);
+            --glow-1: rgba(0, 210, 255, 0.05);
+            --glow-2: rgba(0, 210, 255, 0.02);
+            --switch-glow: rgba(0, 210, 255, 0.8);
+            --moon-glow: 0 0 8px var(--pri);
+            --text-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         body {
-            font-family: "Segoe UI", sans-serif;
             background: var(--bg);
-            margin: 0;
+            background-image:
+              radial-gradient(circle at top right, var(--glow-1), transparent 40%),
+              radial-gradient(circle at bottom left, var(--glow-2), transparent 50%);
             padding: 20px;
-            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
         }
 
         .container {
+            width: 100%;
             max-width: 400px;
-            margin: auto;
         }
 
         .card {
             background: var(--card);
-            padding: 25px;
-            border-radius: 14px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
         }
 
         h2 {
-            margin-bottom: 20px;
-            text-align: center;
+            color: var(--text);
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-shadow: var(--text-shadow);
+        }
+
+        /* ĐỒNG BỘ KHU VỰC SWITCH THEME */
+        .theme-switch {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .switch {
+            position: relative;
+            width: 40px;
+            height: 22px;
+            display: inline-block;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            inset: 0;
+            background: #cbd5e1;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            border: 1px solid var(--border);
+        }
+
+        body.dark .slider {
+            background: #1e293b;
+        }
+
+        .slider:before {
+            content: "";
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 0 8px var(--switch-glow);
+        }
+
+        input:checked + .slider {
+            background: rgba(0, 210, 255, 0.2);
+            border-color: var(--pri);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(18px);
+            background: var(--pri);
+        }
+
+        /* ẨN HIỆN ICON TRÁI SWITCH THEO THEME */
+        .sun-icon, .moon-icon {
+            font-size: 15px;
+            line-height: 1;
+            display: inline-block;
+            user-select: none;
+        }
+
+        .sun-icon { display: block; }
+        .moon-icon { display: none; }
+
+        body.dark .sun-icon { display: none; }
+        body.dark .moon-icon { 
+            display: block; 
+            text-shadow: var(--moon-glow);
         }
 
         label {
             display: block;
-            margin-top: 12px;
-            font-weight: 500;
+            color: var(--sub);
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        select,
-        input {
+        .input-control {
             width: 100%;
-            padding: 12px;
-            border-radius: 10px;
+            height: 46px;
             border: 1px solid var(--border);
-            margin-top: 8px;
-            box-sizing: border-box;
-        }
-
-        button,
-        input[type="submit"] {
-            width: 100%;
-            padding: 12px;
             border-radius: 10px;
-            border: none;
-            background: var(--primary);
-            color: white;
-            margin-top: 15px;
-            cursor: pointer;
-            font-size: 15px;
+            background: var(--input-bg);
+            padding: 0 16px;
+            color: var(--text);
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s;
         }
 
-        hr {
-            border: none;
-            border-top: 1px solid var(--border);
-            margin: 10px 0;
-        }
-
-        .select-wrap {
-            position: relative;
-        }
-
-        #signalView {
-            position: absolute;
-            right: 35px;
-            top: 50%;
-            transform: translateY(-50%);
-            pointer-events: none;
-        }
-
-        .signal {
-            display: flex;
-            gap: 3px;
-            align-items: flex-end;
-        }
-
-        .bar {
-            width: 5px;
-            border-radius: 3px;
-            background: #d0d7de;
-        }
-
-        .bar.active {
-            background: var(--primary);
-        }
-
-        .bar:nth-child(1) {
-            height: 6px;
-        }
-
-        .bar:nth-child(2) {
-            height: 10px;
-        }
-
-        .bar:nth-child(3) {
-            height: 14px;
-        }
-
-        .bar:nth-child(4) {
-            height: 18px;
-        }
-
-        .level-1 .bar:nth-child(n+2),
-        .level-2 .bar:nth-child(n+3),
-        .level-3 .bar:nth-child(4) {
-            background: #d0d7de !important;
+        .input-control:focus {
+            border-color: var(--pri);
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
         }
 
         .password-box {
@@ -152,78 +223,133 @@ const char CKC_WebUI::WebConfigHEAD[] PROGMEM = R"rawliteral(
         }
 
         .password-box input {
-            width: 100%;
-            padding-right: 45px;
+            padding-right: 48px;
         }
 
         .toggle-eye {
             position: absolute;
-            right: 14px;
+            right: 16px;
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
             user-select: none;
             font-size: 16px;
-            opacity: 0.7;
-        }
-
-        .dropdown{
-            margin-top:15px;
-            max-height:180px;
-            overflow-y:auto;
-            border:1px solid #e0e6ed;
-            border-radius:10px;
-            background:#fff;
-        }
-
-        .dropdown .title{
-            padding:14px 16px;
-            font-size:18px;
-            font-weight:bold;
-            border-bottom:1px solid #eee;
-        }
-
-        .option{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            padding:14px 16px;
-            cursor:pointer;
-            border-bottom:1px solid #eee;
-            transition:.2s;
-        }
-
-        .option:last-child{
-            border-bottom:none;
-        }
-
-        .option:hover{
-            background:#f5f7f9;
-        }
-
-        .signal{
-            display:flex;
-            gap:2px;
-            align-items:flex-end;
-        }
-
-        .bar{
-            width:4px;
-            background:#d0d7de;
-            border-radius:2px;
-        }
-
-        .bar:nth-child(1){height:6px;}
-        .bar:nth-child(2){height:9px;}
-        .bar:nth-child(3){height:12px;}
-        .bar:nth-child(4){height:15px;}
-
-        .bar.active{
-            background:#4CAF93;
+            opacity: 0.6;
+            color: var(--text);
+            transition: opacity 0.2s;
         }
 
         .toggle-eye:hover {
-            opacity: 1;}
+            opacity: 1;
+        }
+
+        /* NÚT SUBMIT & BUTTON */
+        button,
+        input[type="submit"] {
+            width: 100%;
+            height: 48px;
+            border: 1px solid var(--pri);
+            border-radius: 10px;
+            background: var(--btn-bg);
+            color: var(--pri);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s, transform 0.1s;
+            letter-spacing: 0.5px;
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.1);
+            margin-top: 20px;
+        }
+
+        button:hover,
+        input[type="submit"]:hover {
+            background: var(--pri);
+            color: var(--btn-text);
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+        }
+
+        button:active,
+        input[type="submit"]:active {
+            transform: scale(0.98);
+        }
+
+        .btn-reload {
+            margin-top: 0;
+            height: 44px;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 20px 0;
+        }
+
+        /* DROPDOWN DANH SÁCH WIFI QUÉT ĐƯỢC */
+        .dropdown {
+            margin-top: 16px;
+            max-height: 220px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--input-bg);
+        }
+
+        .dropdown .title {
+            padding: 14px 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--sub);
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        .option:last-child {
+            border-bottom: none;
+        }
+
+        .option:hover {
+            background: var(--border);
+        }
+
+        /* BIỂU TƯỢNG VẠCH SÓNG */
+        .signal {
+            display: flex;
+            gap: 2.5px;
+            align-items: flex-end;
+        }
+
+        .bar {
+            width: 4px;
+            background: #cbd5e1;
+            border-radius: 2px;
+            transition: background 0.2s;
+        }
+
+        body.dark .bar {
+            background: #1e293b;
+        }
+
+        .bar:nth-child(1) { height: 6px; }
+        .bar:nth-child(2) { height: 9px; }
+        .bar:nth-child(3) { height: 12px; }
+        .bar:nth-child(4) { height: 15px; }
+
+        .bar.active {
+            background: #10b981 !important; /* Đổi thành màu xanh lá hiện đại cho vạch sóng active */
+        }
     </style>
 </head>
 
@@ -231,56 +357,43 @@ const char CKC_WebUI::WebConfigHEAD[] PROGMEM = R"rawliteral(
 
     <div class="container">
 
+        <!-- CARD THIẾT LẬP THIẾT BỊ -->
         <div class="card">
 
-            <h2>SET UP DEVICE</h2>
+            <!-- HEADER CARD: TIÊU ĐỀ BÊN TRÁI, SWITCH BÊN PHẢI -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h2>SET UP DEVICE</h2>
+                
+                <div class="theme-switch">
+                    <span class="sun-icon">☀️</span>
+                    <span class="moon-icon">🌙</span>
+                    <label class="switch">
+                        <input id="themeSwitch" type="checkbox" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
 
             <form action="/connect" method="POST">
 
                 <label>SSID</label>
-
                 <div class="select-wrap">
-                <input
-                type="text"
-                id="wifiSelect"
-                name="ssid"
-                placeholder="Select WiFi"
-                />                
-
+                    <input type="text" id="wifiSelect" name="ssid" class="input-control" placeholder="Select WiFi" />                
                 </div>
 
                 <label>WiFi Password</label>
-
                 <div class="password-box">
-
-                    <input type="password" id="wifiPass" name="pass" placeholder="Enter WiFi password">
-
-                    <span class="toggle-eye" onclick="togglePassword('wifiPass', this)">
-                        👁
-                    </span>
-
+                    <input type="password" id="wifiPass" name="pass" class="input-control" placeholder="Enter WiFi password">
+                    <span class="toggle-eye" onclick="togglePassword('wifiPass', this)">👁</span>
                 </div>
 
                 <label>MQTT Username</label>
-
-                <input
-                    type="text"
-                    id="mqttUser"
-                    name="mqtt_user"
-                    placeholder="Enter MQTT username">
+                <input type="text" id="mqttUser" name="mqtt_user" class="input-control" placeholder="Enter MQTT username">
 
                 <label>MQTT Password</label>
-
                 <div class="password-box">
-                    <input
-                            type="password"
-                            id="mqttPass"
-                            name="mqtt_pass"
-                            placeholder="Enter MQTT password">
-
-                    <span class="toggle-eye" onclick="togglePassword('mqttPass', this)">
-                    👁
-                    </span>
+                    <input type="password" id="mqttPass" name="mqtt_pass" class="input-control" placeholder="Enter MQTT password">
+                    <span class="toggle-eye" onclick="togglePassword('mqttPass', this)">👁</span>
                 </div>
 
                 <input type="submit" value="CONNECT" />
@@ -289,70 +402,76 @@ const char CKC_WebUI::WebConfigHEAD[] PROGMEM = R"rawliteral(
 
         </div>
 
-            <hr> 
-                <div class="card">
+        <hr> 
+        
+        <!-- CARD SCAN WIFI -->
+        <div class="card">
 
-                    <form action="/scan" method="GET">
-                        <button type="submit">
-                            RELOAD WIFI
-                        </button>
-                    </form>
+            <form action="/scan" method="GET">
+                <button type="submit" class="btn-reload">RELOAD WIFI</button>
+            </form>
 
-                    <div class="dropdown" id="wifiList">
-
-                        <div class="title">
-                            Scan Wi-Fi
-                        </div>
+            <div class="dropdown" id="wifiList">
+                <div class="title">Scan Wi-Fi</div>
 )rawliteral";
 // =====================================================
 // HTML FOOT
 // =====================================================
 const char CKC_WebUI::WebConfigFOOT[] PROGMEM = R"rawliteral(
-                       </div>      <!-- dropdown -->
-                </div>      <!-- card -->
+               </div>      <!-- dropdown -->
+        </div>      <!-- card -->
     </div>      <!-- container --> 
-    <script>
 
+    <script>
         const CONFIG = {
-                            mqttUser: "%MQTT_USER%",
-                            mqttPass: "%MQTT_PASS%"
-                        };
+            mqttUser: "%MQTT_USER%",
+            mqttPass: "%MQTT_PASS%"
+        };
 
         document.getElementById("mqttUser").value = CONFIG.mqttUser;
         document.getElementById("mqttPass").value = CONFIG.mqttPass;
 
-
         const select = document.getElementById("wifiSelect");
         
-
-        function selectWifi(name)
-        {
+        function selectWifi(name) {
             document.getElementById("wifiSelect").value = name;
         }        
 
         window.onload = function () {
-            if (select.options.length > 0) {
-                let level =
-                    select.options[select.selectedIndex]
-                        .getAttribute("data-level");
-
+            if (select && select.options && select.options.length > 0) {
+                let level = select.options[select.selectedIndex].getAttribute("data-level");
                 renderSignal(level);
             }
         };
 
         function togglePassword(inputId, eye) {
             const input = document.getElementById(inputId);
-
             if (input.type === "password") {
                 input.type = "text";
-                eye.innerHTML = "👁";
-            }
-            else {
+                eye.innerHTML = "👁"; // Có thể đổi thành biểu tượng khác nếu muốn
+            } else {
                 input.type = "password";
                 eye.innerHTML = "👁";
             }
         }
 
+        // --- XỬ LÝ SWITCH THEME (MẶC ĐỊNH LÀ SÁNG) ---
+        const sw = document.getElementById("themeSwitch");
+
+        function setTheme(isDark) {
+            document.body.classList.toggle("dark", isDark);
+            sw.checked = isDark;
+            localStorage.setItem("theme", isDark ? "dark" : "light");
+        }
+
+        // Kiểm tra cấu hình cũ đã lưu, mặc định ban đầu là light (false) nếu chưa cài đặt
+        if (localStorage.getItem("theme") === "dark") {
+            setTheme(true);
+        } else {
+            setTheme(false);
+        }
+
+        sw.onchange = () => setTheme(sw.checked);
     </script>
 </body>
 

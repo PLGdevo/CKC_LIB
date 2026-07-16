@@ -9,6 +9,11 @@
 #include <Preferences.h>
 #include <CKC_WiFi/Confg_UI.hpp>
 
+#if defined(OTA)
+#include <OTA/ESP32_OTA.hpp>
+CKC_OTA PLG_OTA;
+#endif
+
 #define WIFI_AP_Subnet IPAddress(255, 255, 255, 0)
 char STA_WIFI_NAME[32];
 char STA_WIFI_PASS[32];
@@ -29,11 +34,14 @@ enum CKC_WiFI_TASK
     WIFI_DISCONNECTED,
 };
 
+WebServer PLG_server{80};
+
 CKC_WiFI_TASK WiFi_TASK = MODE_STA;
 template <class Transport>
 class CKC_PnP
 {
     WebServer webServer{80};
+
     Preferences prefs;
     DNSServer dnsServer;
 
@@ -57,6 +65,7 @@ public:
     void Try_Connect();        // Kết nối lại WiFi sau khi bị báo rớt WiFi
     void CKC_mode_connected(); // Hàm hoạt động giao tiếp giữa thiết bị và máy chủ và kiểm tra kết nối
     bool CkC_Connected();      // Hàm kiểm tra kết nối WiFi
+    bool CKC_Config_mode();    // Hàm kiểm tra chế độ cài đặt AP
     void run();                // Hàm chạy tuần tự chương trình theo STATE
     static const char WebConfigHEAD[] PROGMEM;
     static const char WebConfigFOOT[] PROGMEM;
@@ -425,7 +434,7 @@ inline void CKC_PnP<Transport>::CKC_SendPage()
     webServer.send(200, "text/html", "");
     webServer.sendContent_P(CKC_WebUI::WebConfigHEAD);
 
-    // String foot = FPSTR(CKC_WebUI::WebConfigHEAD);    
+    // String foot = FPSTR(CKC_WebUI::WebConfigHEAD);
 
     // foot.replace("%MQTT_USER%", _mqtt_username);
     // foot.replace("%MQTT_PASS%", _mqtt_pass);
@@ -442,7 +451,7 @@ inline void CKC_PnP<Transport>::CKC_SendPage()
         }
     }
     // webServer.sendContent_P(CKC_WebUI::WebConfigFOOT);
-    String foot = FPSTR(CKC_WebUI::WebConfigFOOT);    
+    String foot = FPSTR(CKC_WebUI::WebConfigFOOT);
 
     foot.replace("%MQTT_USER%", _mqtt_username);
     foot.replace("%MQTT_PASS%", _mqtt_pass);
@@ -493,6 +502,7 @@ template <class Transport>
 inline void CKC_PnP<Transport>::CKC_state_Connect_STA()
 {
     webServer.stop();
+    PLG_OTA.stop();    
     loadWiFi();
     loadMQTT();
     // =========================
@@ -525,6 +535,7 @@ inline void CKC_PnP<Transport>::CKC_state_Connect_STA()
         {
             SaveWiFi(_sta_ssid, _sta_pass);
             CKC_LOG_WIFI("WIFI", "RSSI:  %d", WiFi.RSSI());
+            PLG_OTA.begin(PLG_server);
             STA();
             return;
         }
@@ -606,6 +617,9 @@ inline void CKC_PnP<Transport>::STA()
                           "\r\n");
         SaveMQTT(mqttusername, mqttpass);
     }
+
+    PLG_OTA.begin(PLG_server);
+
     WiFi_TASK = MODE_CONNECTED;
 }
 
@@ -614,6 +628,7 @@ template <class Transport>
 inline void CKC_PnP<Transport>::CKC_state_Connect_AP()
 {
     webServer.stop();
+    PLG_OTA.stop();
     dnsServer.stop();
     WiFi.mode(WIFI_AP_STA);
     delay(100);
@@ -705,8 +720,22 @@ inline bool CKC_PnP<Transport>::CkC_Connected()
 }
 
 template <class Transport>
+inline bool CKC_PnP<Transport>::CKC_Config_mode()
+{
+    if (WiFi_TASK == MODE_AP || WiFi_TASK == RUN_AP_WEB)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+template <class Transport>
 inline void CKC_PnP<Transport>::CKC_mode_connected()
 {
+    PLG_server.handleClient();
     if (WiFi.status() != WL_CONNECTED)
     {
         CKC_LOG_FAIL("WIFI", "LOST WIFI !!!!!");

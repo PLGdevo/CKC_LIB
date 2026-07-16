@@ -66,5 +66,5 @@ void CKC_DataHandler::dispatch(
     }
     // Serial.printf("[CKC] No handler for %s\n", key);    
     CKC_LOG_HANDLER_FAIL("WRITE_PIN","CKC_WRITE(...?) NO KEY : %s",key);   
-    Serial.printf("dispatch=%s count=%d heap=%u\n", key, count, ESP.getFreeHeap());
+    // Serial.printf("dispatch=%s count=%d heap=%u\n", key, count, ESP.getFreeHeap());
 }

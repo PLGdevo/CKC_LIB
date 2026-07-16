@@ -40,6 +40,7 @@ public:
     void begin(const char *sta_ssid, const char *sta_pass, const char *mqtt_userName, const char *mqtt_pass);
     void run();
     bool connected();
+    bool config();
     template <typename... Args>
     void setTelemetry(Args... args);
     template <typename... Args>
@@ -133,6 +134,18 @@ int CKC_Protocall::addTimeEvent(unsigned long time, void (*callback)())
 bool CKC_Protocall::connected()
 {
     if (this->CKC_PNP.CkC_Connected() && this->serverMQTT._connect())
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool CKC_Protocall::config()
+{
+    if (this->CKC_PNP.CKC_Config_mode())
     {
         return 1;
     }

@@ -9,4 +9,6 @@
 #define DEBUG_HANDLER_COLOR
 #endif
 
+#define OTA
+
 #endif
