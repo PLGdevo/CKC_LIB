@@ -22,6 +22,4 @@ Topic format:
 #define CKC_PUB_PREFIX_STATUS_TOPIC                  "status"
 #define CKC_PUB_PREFIX_MODBUS_DATA_TOPIC             "/data/"
 
-
-
 #endif // INC_CKC_TOPIC

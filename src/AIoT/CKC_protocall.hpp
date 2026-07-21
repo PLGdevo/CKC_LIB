@@ -211,6 +211,7 @@ void CKC_Protocall::setControl(Args... args)
         CKC_LOG_ERROR("SET_TELE", "Buffer too small!");
     }
 }
+
 void CKC_Protocall::writeTelemetry(const char *key, const CKCParam value)
 {
     if (this->CKC_PNP.CkC_Connected() && this->serverMQTT._connect())

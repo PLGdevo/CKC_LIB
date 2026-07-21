@@ -502,7 +502,10 @@ template <class Transport>
 inline void CKC_PnP<Transport>::CKC_state_Connect_STA()
 {
     webServer.stop();
-    PLG_OTA.stop();    
+#if defined(OTA)
+    PLG_OTA.stop();
+#endif
+
     loadWiFi();
     loadMQTT();
     // =========================
@@ -535,7 +538,10 @@ inline void CKC_PnP<Transport>::CKC_state_Connect_STA()
         {
             SaveWiFi(_sta_ssid, _sta_pass);
             CKC_LOG_WIFI("WIFI", "RSSI:  %d", WiFi.RSSI());
+#if defined(OTA)
             PLG_OTA.begin(PLG_server);
+#endif
+
             STA();
             return;
         }
@@ -618,7 +624,9 @@ inline void CKC_PnP<Transport>::STA()
         SaveMQTT(mqttusername, mqttpass);
     }
 
+#if defined(OTA)
     PLG_OTA.begin(PLG_server);
+#endif
 
     WiFi_TASK = MODE_CONNECTED;
 }
@@ -628,7 +636,10 @@ template <class Transport>
 inline void CKC_PnP<Transport>::CKC_state_Connect_AP()
 {
     webServer.stop();
+#if defined(OTA)
     PLG_OTA.stop();
+#endif
+
     dnsServer.stop();
     WiFi.mode(WIFI_AP_STA);
     delay(100);

@@ -3,13 +3,8 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include <HTTPClient.h>
-#include <WiFiClientSecure.h>
 #include <WiFiUdp.h>
-#include <MQTT/NPT_Client/NTPClient.h>
-#include <MQTT/PubSubClient/PubSubClient.h>
 #include <stdint.h>
-#include <AIoT/CKC_Param.hpp>
 #include "AIoT/CKC_API.hpp"
 
 template <class MQTT>
@@ -34,7 +29,7 @@ public:
 private:
     const char *MQTT_Server = "mqtt.ait.caothang.edu.vn";
     const int16_t MQTT_PORT = 8883;
-    char MQTT_ID[21];
+    char MQTT_ID[21];    
     char MQTT_USERNAME[28];
     char MQTT_PASS[21];
 
@@ -42,8 +37,6 @@ private:
     char _mac[12];
 };
 
-WiFiClientSecure server;
-PubSubClient mqttClient(server);
 CKC_MQTT<PubSubClient> mqtt;
 
 void CKC_Callback(char *topic, byte *payload, unsigned int length)
@@ -115,8 +108,8 @@ inline void CKC_MQTT<MQTT>::config(const char *mqtt_userName, const char *mqtt_p
     strcpy(MQTT_PASS, mqtt_pass);
     String MAC = WiFi.macAddress();
     strcpy(_mac, MAC.c_str());
-    strcpy(MQTT_ID, _mac);
-    CKC_LOG_MQTT("MQTT", "MQTT_ID: %s", MQTT_ID);
+    strcpy(MQTT_ID, _mac);   
+    CKC_LOG_MQTT("MQTT", "MQTT_ID: %s", MQTT_ID);    
     CKC_LOG_MQTT("MQTT", "MQTT_USERNAME: %s", MQTT_USERNAME);
     CKC_LOG_MQTT("MQTT", "MQTT_PASS: %s", MQTT_PASS);
 }
@@ -132,7 +125,7 @@ inline void CKC_MQTT<MQTT>::begin()
     this->disconnect();
     delay(200);
     server.setInsecure();
-    mqttClient.setServer(MQTT_Server, MQTT_PORT);
+    mqttClient.setServer(MQTT_Server, MQTT_PORT);    
     mqttClient.setKeepAlive(10);
     mqttClient.setSocketTimeout(2);
     mqttClient.setCallback(CKC_Callback);
@@ -141,15 +134,14 @@ inline void CKC_MQTT<MQTT>::begin()
     CKC_LOG_MQTT("MQTT", "CONNECTING ---> SERVER");
     if (mqttClient.connect(MQTT_ID, MQTT_USERNAME, MQTT_PASS))
     {
-
         snprintf(CKC_MQTT_BASE_TOPIC, sizeof(CKC_MQTT_BASE_TOPIC), "%s%s", CKC_BASE_TOPIC, _mac);
         this->CKC_subscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_TELEMETRY_TOPIC);
         this->CKC_subscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_CONTROL_TOPIC);
-        this->CKC_subscribeTopic(CKC_MQTT_BASE_TOPIC,CKC_SUB_PREFIX_STATUS_TOPIC);
+        this->CKC_subscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_STATUS_TOPIC);
 
-        // CKC_LOG_DEBUG("MQTT", "%s%s", CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_TELEMETRY_TOPIC);
-        // CKC_LOG_DEBUG("MQTT", "%s%s", CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_CONTROL_TOPIC);
-        CKC_LOG_OK("MQTT", "CONNECTED ---> SERVER");
+        CKC_LOG_MQTT("MQTT", "%s%s", CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_TELEMETRY_TOPIC);
+        CKC_LOG_MQTT("MQTT", "%s%s", CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_CONTROL_TOPIC);
+        CKC_LOG_OK("MQTT", "CONNECTED ---> SERVER");        
     }
     else
     {
@@ -162,12 +154,11 @@ inline void CKC_MQTT<MQTT>::disconnect()
     snprintf(CKC_MQTT_BASE_TOPIC, sizeof(CKC_MQTT_BASE_TOPIC), "%s%s", CKC_BASE_TOPIC, _mac);
     this->CKC_unsubscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_TELEMETRY_TOPIC);
     this->CKC_unsubscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_CONTROL_TOPIC);
-    this->CKC_unsubscribeTopic(CKC_MQTT_BASE_TOPIC,CKC_SUB_PREFIX_STATUS_TOPIC);
+    this->CKC_unsubscribeTopic(CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_STATUS_TOPIC);
 
     // CKC_LOG_DEBUG("MQTT", "UN________%s%s", CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_TELEMETRY_TOPIC);
-    // CKC_LOG_DEBUG("MQTT", "UN________%s%s", CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_CONTROL_TOPIC);   
+    // CKC_LOG_DEBUG("MQTT", "UN________%s%s", CKC_MQTT_BASE_TOPIC, CKC_SUB_PREFIX_CONTROL_TOPIC);
     delay(100);
-    
 }
 
 template <class MQTT>

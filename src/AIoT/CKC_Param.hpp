@@ -237,4 +237,63 @@ CKCParam parseItem(cJSON *item)
     return value;
 }
 
+
+// #include <iostream>
+// #include <string>
+// #include <unordered_map>
+
+// class WidgetType {
+// public:
+//     // Constants
+//     static constexpr int config = 1;
+//     static constexpr int control = 2;
+//     static constexpr int chart = 3;
+//     static constexpr int gauge = 4;
+//     static constexpr int slider = 5;
+//     static constexpr int state = 6;
+//     static constexpr int switchWidget = 7;
+
+//     // Map: Tên hiển thị (Tiếng Việt) -> ID (map<string, int>)
+//     static const std::unordered_map<std::string, int> nameToId;
+
+//     // Map phụ: ID -> Tên hiển thị (để tra ngược lại nếu cần)
+//     static const std::unordered_map<int, std::string> idToName;
+
+//     /// Mapping type -> target_table name trong DB
+//     static std::string targetTableForType(int type) {
+//         switch (type) {
+//             case config:       return "device_configs";
+//             case control:      return "device_controls";
+//             case chart:        return "chart_configs";
+//             case gauge:        return "gauge_configs";
+//             case slider:       return "slider_configs";
+//             case state:        return "state_configs";
+//             case switchWidget: return "switch_configs";
+//             default:           return "";
+//         }
+//     }
+// };
+
+// // Khởi tạo static maps trong C++
+// const std::unordered_map<std::string, int> WidgetType::nameToId = {
+//     {"Cấu hình", WidgetType::config},
+//     {"Nút bấm", WidgetType::control},
+//     {"Biểu đồ", WidgetType::chart},
+//     {"Đồng hồ", WidgetType::gauge},
+//     {"Thanh trượt", WidgetType::slider},
+//     {"Trạng thái", WidgetType::state},
+//     {"Công tắc", WidgetType::switchWidget}
+// };
+
+// const std::unordered_map<int, std::string> WidgetType::idToName = {
+//     {WidgetType::config, "Cấu hình"},
+//     {WidgetType::control, "Nút bấm"},
+//     {WidgetType::chart, "Biểu đồ"},
+//     {WidgetType::gauge, "Đồng hồ"},
+//     {WidgetType::slider, "Thanh trượt"},
+//     {WidgetType::state, "Trạng thái"},
+//     {WidgetType::switchWidget, "Công tắc"}
+// };
+
+
 #endif
